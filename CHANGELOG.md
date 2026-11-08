@@ -14,6 +14,8 @@ Zweite Prüfung durch Codex Astra (`handover/2026-11-09-zweitmeinung-haertung-re
 - Notbremse nach hängendem Abbruch beendet nur den Prozess, das Gespräch ruht und bleibt nutzbar.
 - Antwort: keine Technik der Umgebung (Befehle, Serverpfade, nicht ausführbare Prüfschritte), Dateien als relativer Link.
 - Grenzfalltest der Beta bestanden (Sprache, Ruhen, 10 Runden, drei Tester, Eingaben, Sandbox, Neustart), Skript `betrieb/web-grenzfaelle.py`.
+- Prüfrunde: Korrektur nur, wenn der Nutzer sonst eine falsche Zahl erhielte oder einen falschen Schluss zöge. Messung auf 0.6.2 (Breitensatz, 50 geprüfte Antworten): 1 Korrektur, unnötig, kein übersehener Fehler, 45 s Zusatzzeit. Schalter bleibt optional, Standard aus.
+- Testtreiber: Der Prüfer bekommt die genannten Dateien als Kopie wie in der Oberfläche (gemeinsamer Text in `pruefauftrag_text`).
 - Regressionstests: 10 (die neuen scheitern am Stand davor).
 
 ## 0.6.2 (08.11.2026)

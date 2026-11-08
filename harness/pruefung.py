@@ -23,8 +23,10 @@ den Nutzer geht.
   passt. Lies dazu die Themenansicht und den Katalog.
 - Rechne die Kernzahlen mit eigenen Abfragen nach. Leite die Abgrenzung selbst aus Katalog und SAE-Wissen ab, statt
   den Angaben im Nachweis zu folgen.
-- Korrigiere nur, was nachweislich falsch oder irreführend ist. Andere, gleichwertige Darstellungen, Rundungen und
-  Formulierungen sind kein Fehler.
+- Korrigiere nur, wenn der Nutzer mit der Antwort eine falsche Zahl erhielte oder einen falschen Schluss zöge. Ist die
+  Antwort richtig, aber knapper oder weniger genau, als du sie formuliert hättest, bestätige sie und nenne die
+  Ergänzung im Satz nach der Kopfzeile. Andere, gleichwertige Darstellungen, Rundungen und Formulierungen sind kein
+  Fehler. Eine Korrektur sieht der Nutzer als Fehlerhinweis.
 
 Deine Antwort beginnt mit genau einer dieser Zeilen:
 - `[Prüfung: bestätigt]`, danach ein Satz, was du nachgerechnet hast.
@@ -35,13 +37,18 @@ Deine Antwort beginnt mit genau einer dieser Zeilen:
 KOPF = re.compile(r"^\s*\[Prüfung:\s*(bestätigt|korrigiert)\]\s*", re.I)
 
 
-def pruefauftrag_text(verlauf, frage, antwort):
+def pruefauftrag_text(verlauf, frage, antwort, kopiert=()):
+    """Eingabe der Prüfrunde. `kopiert`: in der Antwort genannte Dateien, die als Kopie im Arbeitsverzeichnis des
+    Prüfers liegen (die Sandbox sperrt ihm das Gesprächsverzeichnis)."""
     teile = []
     if verlauf:
         teile.append("Bisheriger Gesprächsverlauf:\n\n" + "\n\n".join(
             f"Nutzer: {f}\n\nAnalyst: {a}" for f, a in verlauf))
     teile.append(f"Aktuelle Frage des Nutzers:\n\n{frage}")
     teile.append(f"Antwort des Analysten, zu prüfen:\n\n{antwort}")
+    if kopiert:
+        teile.append(f"Die in der Antwort genannten Dateien liegen als Kopie in deinem Arbeitsverzeichnis: "
+                     f"{', '.join(kopiert)}.")
     return "\n\n---\n\n".join(teile)
 
 
@@ -67,9 +74,9 @@ def auswerten(text):
     return "korrigiert", antwort.strip(), grund.strip()[:300]
 
 
-def pruefen(arbeitsverzeichnis, anweisung, verlauf, frage, antwort, **optionen):
+def pruefen(arbeitsverzeichnis, anweisung, verlauf, frage, antwort, kopiert=(), **optionen):
     """Führt die Prüfrunde in einem eigenen Gespräch. Liefert dict mit urteil, antwort, grund, runde."""
     with Gespraech(arbeitsverzeichnis, anweisung + PRUEFAUFTRAG, **optionen) as g:
-        runde = g.frage(pruefauftrag_text(verlauf, frage, antwort))
+        runde = g.frage(pruefauftrag_text(verlauf, frage, antwort, kopiert))
     urteil, neu, grund = auswerten(runde.text)
     return {"urteil": urteil, "antwort": neu, "grund": grund, "runde": runde}

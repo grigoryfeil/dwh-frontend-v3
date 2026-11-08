@@ -16,6 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(1, str(Path(__file__).resolve().parent.parent))  # web/dateien.py für die Prüferkopien
 import kontext  # noqa: E402
 import pruefung  # noqa: E402
 from sitzung import Gespraech, Sitzungsfehler  # noqa: E402
@@ -73,12 +74,20 @@ def _schritt(item):
 
 def pruefrunde(arbeit, anweisung, runden, frage, text):
     """Prüfrunde wie in der Oberfläche (web/app.py, pruefe), in `arbeit/pruefung`. Liefert das Feld `pruefung`."""
+    from web import dateien  # wie die Oberfläche: genannte Dateien als Kopie, ohne Symlinks zu folgen
     ort = arbeit / "pruefung"
+    if ort.is_symlink() or ort.is_file():
+        ort.unlink()
+    elif ort.exists():
+        shutil.rmtree(ort)
+    _, genannt = dateien.uebersetze(text, arbeit, "lauf")
+    kopiert = sorted(dateien.sichere(arbeit, ort, [d["name"] for d in genannt]))
     ort.mkdir(exist_ok=True)
-    shutil.chown(ort, "dwhv3", "dwhv3")
+    for pfad in [ort, *ort.rglob("*")]:
+        shutil.chown(pfad, "dwhv3", "dwhv3")
     verlauf = [(r["frage"], r["antwort"]) for r in runden if r.get("antwort")]
     try:
-        e = pruefung.pruefen(ort, anweisung, verlauf, frage, text)
+        e = pruefung.pruefen(ort, anweisung, verlauf, frage, text, kopiert)
         r = e.pop("runde")
         return {**e, "sekunden": r.sekunden, "token": r.token, "schritte": [s for s in map(schritt, r.items) if s]}
     except Sitzungsfehler as fehler:

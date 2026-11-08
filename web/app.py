@@ -390,11 +390,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 p.__enter__()
                 if eintrag.abbruch:
                     raise Sitzungsfehler("Runde abgebrochen")
-                auftrag = pruefung.pruefauftrag_text(verlauf, runde["frage"], text)
-                if kopiert:
-                    auftrag += ("\n\n---\n\nDie in der Antwort genannten Dateien liegen als Kopie in deinem "
-                                f"Arbeitsverzeichnis: {', '.join(kopiert)}.")
-                r = p.frage(auftrag,
+                r = p.frage(pruefung.pruefauftrag_text(verlauf, runde["frage"], text, kopiert),
                             beobachter=lambda n: beobachter.ereignis(n, p._turn_id))
             finally:
                 with sperre:
