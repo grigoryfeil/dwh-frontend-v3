@@ -8,7 +8,7 @@ quelle="${1:?Repo-Stand fehlt}"
 # Gespräche gingen verloren. Deshalb nur, wenn kein Modellprozess läuft (oder ausdrücklich mit ERZWINGEN=1).
 laufend=$(pgrep -u dwhv3 -fc "app-server" || true)
 if [[ ${laufend:-0} -gt 0 && ${ERZWINGEN:-0} != 1 ]]; then
-  echo "einrichtung: $laufend Modellprozess(e) laufen, abgebrochen. Später erneut oder mit ERZWINGEN=1." >&2
+  echo "einrichtung: $laufend Modellprozess(e) offen, abgebrochen. Auch ruhende Gespräche verlören ihren Verlauf. Später erneut oder mit ERZWINGEN=1." >&2
   exit 1
 fi
 V2=/opt/dwh-frontend-v2
