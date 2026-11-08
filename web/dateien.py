@@ -3,8 +3,13 @@
 Das Modell verweist mit absolutem Pfad (`/var/lib/dwh-frontend-v3/gespraeche/web-<id>/bild.png`) oder relativ
 (`bild.png`) darauf. Solche Verweise werden in den Vertrag der Oberfläche übersetzt
 (`/api/gespraeche/<id>/dateien/<name>`) und als `dateien` der Runde gemeldet. Nur gemeldete Dateien werden
-ausgeliefert, nur reguläre Dateien innerhalb des Verzeichnisses, ohne Symlinks, und nur Bilder und Tabellen.
-HTML und SVG nicht, sie könnten Skript tragen. Andere Pfade bleiben Text.
+ausgeliefert, nur reguläre Dateien innerhalb des Verzeichnisses, ohne Symlinks: Bilder, Tabellen und Dashboards.
+Andere Pfade bleiben Text.
+
+Dashboards (Data App des Data-Plugins) sind eigenständiges HTML mit Skript und eingebetteten Daten. Sie laufen nur im
+Rahmen der eigenen Seite (`Sec-Fetch-Dest: iframe`, `frame-ancestors 'self'`) in einer Sandbox mit fremdem Ursprung,
+ohne Netz (kein `connect-src`), ohne Formulare und Navigation. Als eigene Seite aufgerufen kommen sie als Quelltext,
+der nichts ausführt; so liest die Oberfläche auch den Titel. SVG bleibt draußen, es trüge Skript in ein `<img>`.
 """
 
 import os
@@ -13,10 +18,37 @@ import stat
 from urllib.parse import quote, unquote
 
 ARTEN = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "webp": "image/webp",
-         "csv": "text/csv", "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+         "csv": "text/csv", "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+         "html": "text/html; charset=utf-8", "htm": "text/html; charset=utf-8"}
 BILD = {"png", "jpg", "jpeg", "gif", "webp"}
+HTML = {"html", "htm"}
 NAME = re.compile(r"[\w][\w.\- ]{0,200}(?:/[\w][\w.\- ]{0,200}){0,4}")
 KOEPFE = {"Content-Security-Policy": "default-src 'none'; sandbox", "X-Content-Type-Options": "nosniff"}
+# data: in script-src, weil die Laufzeit der Data App als <script src="data:..."> in der Datei steckt. Das ist kein
+# Netz und erlaubt nichts, was 'unsafe-inline' nicht schon erlaubt. Kein connect-src: Nachladen bleibt gesperrt.
+DASHBOARD_CSP = ("sandbox allow-scripts; default-src 'none'; script-src 'unsafe-inline' data:; style-src 'unsafe-inline'; "
+                 "img-src data: blob:; font-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'self'")
+# Knöpfe der Data App, die nur in ChatGPT funktionieren (Veröffentlichen, Fragen, Bearbeiten, Menü), wie in V2
+AUSBLENDEN = (b"<style>.dashboard-publish-button,.dashboard-publish-confirm,.publish-review-dialog,.dashboard-ask-anchor,"
+              b".dashboard-ask-button,.dashboard-ask-panel,.dashboard-header-edit-button,"
+              b".dashboard-header-overflow-button{display:none!important}</style>")
+ANKER = [re.compile(rb"<" + tag + rb"\b[^>]{0,1000}>", re.I) for tag in (rb"head", rb"html", rb"!doctype")]
+
+
+def auslieferung(name, inhalt, ziel):
+    """Inhalt, Medientyp und Köpfe für eine gemeldete Datei. `ziel` ist Sec-Fetch-Dest der Anfrage."""
+    endung = name.rsplit(".", 1)[-1].lower()
+    if endung in HTML:
+        koepfe = {"Content-Security-Policy": DASHBOARD_CSP, "X-Content-Type-Options": "nosniff",
+                  "Content-Disposition": "inline"}
+        if ziel != "iframe":
+            return inhalt, "text/plain; charset=utf-8", koepfe
+        for anker in ANKER:  # hinter <head>, sonst <html> oder den Doctype, davor fiele es in den Quirks-Modus
+            if treffer := anker.search(inhalt):
+                return inhalt[:treffer.end()] + AUSBLENDEN + inhalt[treffer.end():], ARTEN[endung], koepfe
+        return AUSBLENDEN + inhalt, ARTEN[endung], koepfe
+    art = "inline" if endung in BILD else f"attachment; filename=\"{quote(name.split('/')[-1])}\""
+    return inhalt, ARTEN[endung], {**KOEPFE, "Content-Disposition": art}
 
 
 def oeffne(cwd, name):

@@ -24,7 +24,8 @@ Environment=DWH_V3_KONTEN=/etc/dwh-frontend-v3/konten.json
 Environment=DWH_V3_GESPRAECHE=/var/lib/dwh-frontend-v3/gespraeche
 # Nur Technik je Runde: Zeit, Token, Status. Keine Fragen, Antworten oder SQL.
 Environment=DWH_V3_PROTOKOLL=/var/lib/dwh-frontend-v3/web-protokoll.jsonl
-Environment=DWH_V3_ZEITLIMIT=600
+# Sekunden je Runde. Dashboards der Data App brauchten in Proben bis 12 Minuten.
+Environment=DWH_V3_ZEITLIMIT=1500
 # Beta-Ablage (web/ablage.py): jedes Gespräch vollständig unter /var/lib/dwh-frontend-v3/ablage/<datum>/<gespraech>/,
 # 0700/0600. Abschalten: DWH_ABLAGE=0 (oder Zeile entfernen), dann Neustart der Unit. Rückbau vor einer Auslieferung.
 Environment=DWH_ABLAGE=1

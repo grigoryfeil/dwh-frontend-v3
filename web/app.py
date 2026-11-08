@@ -8,8 +8,8 @@ sie begonnen hat. Endet die Session, enden ihre Gespräche. TLS übernimmt nginx
 Bedient wird nur, was die Oberfläche braucht. Export, Feedback, Ablage und Beispiele gibt es nicht, die Oberfläche
 kommt ohne sie aus (Antwort 404 bzw. `ablage: false`). Felder ohne V3-Gegenstück (`beleg`, `abfragen`, `pruefung`)
 bleiben leer. SQL geht nicht an die Seite. Dateien, die die Antwort im eigenen Gesprächsverzeichnis nennt (etwa
-Diagramme), übersetzt web/dateien.py in `dateien` und liefert nur diese aus. Mit eingeschalteter Beta-Ablage
-(web/ablage.py) wird jedes Gespräch vollständig abgelegt, die Seite zeigt das an und bietet Feedback.
+Diagramme und Dashboards), übersetzt web/dateien.py in `dateien` und liefert nur diese aus. Mit eingeschalteter
+Beta-Ablage (web/ablage.py) wird jedes Gespräch vollständig abgelegt, die Seite zeigt das an und bietet Feedback.
 """
 
 import asyncio
@@ -26,7 +26,6 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import quote
 
 from starlette.applications import Starlette
 from starlette.middleware import Middleware
@@ -523,10 +522,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
             return fehler(404, "Datei unbekannt")
         with datei_:
             inhalt = datei_.read(50_000_000)
-        endung = name.rsplit(".", 1)[-1].lower()
-        art = "inline" if endung in dateien.BILD else f"attachment; filename=\"{quote(name.split('/')[-1])}\""
-        return Response(inhalt, media_type=dateien.ARTEN[endung],
-                        headers={**dateien.KOEPFE, "Content-Disposition": art})
+        inhalt, art, koepfe = dateien.auslieferung(name, inhalt, request.headers.get("sec-fetch-dest"))
+        return Response(inhalt, media_type=art, headers=koepfe)
 
     async def speichern_schalten(request):
         """Beta: Speichern an oder aus, gilt für jede Runde, die danach endet. Einschalten legt auch die früheren
