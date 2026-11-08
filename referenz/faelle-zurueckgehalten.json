@@ -134,15 +134,32 @@
    "fragen": [
     "Stimmt es, dass rund 30 Prozent unserer Studierenden abbrechen?"
    ],
-   "lesart": "Die verbreiteten rund 30 % stammen aus der Exec Summary „Student Attrition Analysis: 2016-2023 Cohorts“ und messen Nichtabschluss (ohne Abschluss und ohne Wiedereinschreibung), nicht Abbruch. Die Abbruchquote nach Kennzahlen v4 (terminate in reifen Kohorten) liegt bei rund 24 bis 26 %. Erwartet: diese Unterscheidung und eine Abbruchquote im Bereich.",
+   "lesart": "Die verbreiteten rund 30 % stammen aus der Exec Summary „Student Attrition Analysis: 2016-2023 Cohorts“ und messen Nichtabschluss (ohne Abschluss und ohne Wiedereinschreibung), nicht Abbruch. Die Abbruchquote (Terminations) über alle Programme ohne Certificates, reife Eintrittskohorten ab 2018_H1, liegt laut Dashboard „Student Outcomes – Cohort View“ bei 28,5 %. Erwartet: diese Unterscheidung und die Abbruchquote. Mit Certificates (24,9 %) ist eine andere Grundgesamtheit und ergibt unklar; Einschluss von 2016 und 2017 (27,2 % ohne, 24,3 % mit Certificates) gilt als verfehlt.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
     {"art": "einschraenkung", "name": "Nichtabschluss unterschieden", "muster": ["Nichtabschluss|Nicht-Abschluss|ohne Abschluss|keinen Abschluss|nicht abgeschlossen|Abschluss nicht"]},
-    {"art": "zahl", "name": "Abbruchquote reife Kohorten", "bereich": [23.0, 29.5], "einheit": "%", "kontext": "Abbruch|abgebrochen|beend|Kündig|terminat"}
+    {"art": "zahl", "name": "Abbruchquote alle Programme, reife Kohorten ab 2018_H1", "werte": [28.5], "toleranz": 0.1, "einheit": "%", "kontext": "Abbruch|abgebrochen|beend|Kündig|terminat", "werte_unklar": [24.9]}
    ],
-   "quelle": "Drive „attrition_executive_summary_20260430.pdf“, Data Analyst BI, 30.04.2026: 4.121 von 13.490 Personen der Startkohorten 2016 bis 2023 ohne Certificate, 30,5 %, Nichtabschluss. SAE-Wissen VER-018.",
-   "nachvollzogen": "Die 30,5 % sind auf der Kopie nicht reproduzierbar (obt_outcomes 2016 bis 2023: 17.517 Datensätze, andere Grundgesamtheit). Abbruch: obt_outcomes, is_mature = 1, Kohorten 2016 bis 2023_H1 zusammen 3.936 von 16.200 = 24,3 %; je reifer Halbjahreskohorte 2022_H1 23,6 %, 2022_H2 27,6 %, 2023_H1 24,7 %.",
-   "sicherheit": "mittel: Einordnung belegt, Bereich der Abbruchquote breit"
+   "quelle": "Einordnung: Drive „attrition_executive_summary_20260430.pdf“, Data Analyst BI, 30.04.2026: 4.121 von 13.490 Personen der Startkohorten 2016 bis 2023 ohne Certificate, 30,5 %, Nichtabschluss; SAE-Wissen VER-018. Abbruchquote: Data-Studio-Dashboard „Student Outcomes – Cohort View“, Eva Elliott, Datenstand 26.10.2026, alle Programme: Terminations 28,5 %, Effective Award 60,7 %, Original Award 41,0 %, End without Award 9,8 %; abgelesen von der Steuersession am 08.11.2026.",
+   "nachvollzogen": "Prüfung geändert am 08.11.2026 auf Grundlage des Dashboards als unabhängiger SAE-Quelle, nicht wegen eines Laufergebnisses (vermerkt in referenz/README.md). Vorher: Bereich 23,0 bis 29,5 % ohne Berichtsbeleg. Die 30,5 % sind auf der Kopie nicht reproduzierbar (obt_outcomes 2016 bis 2023: 17.517 Datensätze, andere Grundgesamtheit). obt_outcomes, is_mature = 1, period_key ab 2018, program ohne Certificate: 2.785 von 9.774 = 28,49 %; Effective Award 60,71 %, Original Award 41,01 %, End without Award 9,77 %, alle vier identisch mit dem Dashboard. Damit ist geklärt, dass „alle Programme“ im Dashboard ohne Certificates rechnet; mit Certificates 24,9 %.",
+   "sicherheit": "hoch: Dashboard und Kopie identisch"
+  },
+  {
+   "id": "R-A04",
+   "thema": "abbruch",
+   "art": "wert",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie viele unserer Studierenden bleiben bis zum Vertragsende, schließen aber ohne Abschluss ab?"
+   ],
+   "lesart": "End without Award: Anteil der reifen Eintrittskohorten ab 2018_H1, deren Vertrag regulär ohne Abschluss endet (keine Kündigung), alle Programme ohne Certificates, wie im Dashboard „Student Outcomes – Cohort View“. Mit Certificates (16,4 %) ist eine andere Grundgesamtheit und ergibt unklar.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "End without Award alle Programme", "werte": [9.8], "toleranz": 0.1, "einheit": "%", "werte_unklar": [16.4]}
+   ],
+   "quelle": "Data-Studio-Dashboard „Student Outcomes – Cohort View“, Eva Elliott, Datenstand 26.10.2026, alle Programme: End without Award 9,8 %. Abgelesen von der Steuersession am 08.11.2026.",
+   "nachvollzogen": "obt_outcomes, is_mature = 1, period_key ab 2018, program ohne Certificate: is_end_without_award 9,77 %; mit Certificates 16,4 % (Certificates allein 57,1 %).",
+   "sicherheit": "hoch"
   },
   {
    "id": "R-U02",

@@ -9,7 +9,8 @@ Aufruf:
 
 Kein Modellrichter. Je Fall wird die Antwort der letzten Runde geprüft:
   zahl            ein erwarteter Wert (Liste `werte` mit `toleranz` bzw. `toleranz_rel`, oder `bereich`) steht in der
-                  Antwort, wenn `kontext` gesetzt ist, in einer Zeile, die auf `kontext` passt.
+                  Antwort, wenn `kontext` gesetzt ist, in einer Zeile, die auf `kontext` passt. Steht statt dessen nur
+                  ein Wert aus `werte_unklar` da (zulässige Aufschlüsselung, nicht die Standardaussage), ist das unklar.
   einschraenkung  jedes Muster in `muster` kommt in der Antwort vor (reguläre Ausdrücke, Groß/klein egal).
   verboten        das Muster kommt nicht vor.
 Ergebnis je Fall: bestanden, verfehlt oder unklar. Unklar heißt: deterministisch nicht entscheidbar, etwa weil das
@@ -149,6 +150,13 @@ def zahl_pruefen(p, antwort):
             ohne_kontext = ohne_kontext or f"„{fund}“ ohne passenden Kontext in: {zeile.strip()[:160]}"
     if ohne_kontext:
         return "unklar", ohne_kontext
+    if p.get("werte_unklar"):
+        # zulässige Aufschlüsselung statt der Standardaussage: Grigory entscheidet
+        ersatz = {k: v for k, v in p.items() if k not in ("bereich", "werte_unklar")}
+        ersatz["werte"] = p["werte_unklar"]
+        ergebnis, fund = zahl_pruefen(ersatz, antwort)
+        if ergebnis != "verfehlt":
+            return "unklar", f"nur Aufschlüsselung statt Standardaussage: {fund}"
     # Fundstelle für verfehlt: Zahlen aus Zeilen mit passendem Kontext
     kandidaten = []
     for zeile, umfeld in zeilen:

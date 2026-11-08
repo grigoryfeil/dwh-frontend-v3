@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.2 (08.11.2026)
+
+- Abbruchquote und Studienerfolg am Dashboard „Student Outcomes – Cohort View“ (Eva Elliott) verankert: reife Kohorten ab 2018_H1, ohne Zertifikate; 5 neue Kennzahlen.
+- Referenzsatz: Abbruch-Fälle auf das Dashboard umgestellt (auf Grundlage unabhängiger Quelle), zwei neue zurückgehaltene Fälle.
+
 ## 0.3.1 (08.11.2026)
 
 - SAE-Wissen an die Kennzahlvarianten angeglichen, Katalog mit älterer KPI-Tabelle aus Drive abgeglichen (08b hat Vorrang).

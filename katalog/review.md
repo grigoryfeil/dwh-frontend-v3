@@ -182,3 +182,30 @@ Diese Lesarten erklären, warum Berichte nach dem alten Entwurf andere Zahlen ze
 
 **Für den Referenzsatz taugt die Tabelle nicht als Wertequelle**, weil sie keine Zahlen und keinen Datenstand hat. Brauchbar ist sie für Fragen in der Sprache der Fachseite (Overall Conversion, Time to Conversion, Target Achievement) und für den Fall „alter Bericht zeigt andere Zahl“. Als Wertequelle käme das auf Blatt 2 genannte Salesforce-Dashboard in Frage, wenn ein datierter Export vorliegt.
 
+## Abbruchquote und Studienerfolg nach dem SAE-Dashboard (08.11.2026)
+
+**Die Quelle.** Dashboard „Student Outcomes – Cohort View“ von Eva Elliott in Data Studio, Datenstand 26.10.2026. Die Steuersession hat es am 08.11.2026 im Browser gelesen, die Seite „Definitions“ übersetzt und die Kopfkennzahlen abgelesen. Der Datenstand entspricht dem Baudatum von `obt_outcomes` in der Kopie. Es ist die erste SAE-Quelle für die Kennzahlen des Studienerfolgs. Bisher stützten sie sich auf die Kennzahlen v4 (K6, Rechenweg dort als Vorschlag markiert) und auf V2.
+
+**Die Abweichung bei allen Programmen ist erklärt.** Das Dashboard zeigt unter „alle Programme“ die Rechnung ohne Zertifikate. Damit treffen alle Kopfkennzahlen die Kopie auf eine Nachkommastelle:
+
+| Kopfkennzahl | Dashboard alle Programme | Kopie ohne Zertifikate | Kopie mit Zertifikaten | Dashboard BA (Hons) | Kopie BA (Hons) |
+|---|---|---|---|---|---|
+| Terminations | 28,5 % | 28,5 % | 24,9 % | 30,2 % | 30,2 % |
+| Effective Award | 60,7 % | 60,7 % | 57,7 % | 63,8 % | 63,9 % |
+| Original Award | 41,0 % | 41,0 % | 39,7 % | 45,2 % | 45,2 % |
+| End without Award | 9,8 % | 9,8 % | 16,4 % | 4,7 % | 4,7 % |
+| Maturity der Auswahl | 60,0 % | 60,0 % | 58,3 % | 56,0 % | 56,0 % |
+
+Basis: reife Kohorten ab 2018_H1, Personen über die Kohorten summiert. Zertifikate enden zu 57 % ohne Abschluss und brechen selten ab, ihr Einschluss senkt die Abbruchquote und hebt End without Award. „Maturity der Auswahl“ ist der Anteil der Personen ab 2018_H1, die in reifen Kohorten liegen. Die Rechnung ist aus der Übereinstimmung erschlossen, das Dashboard beschreibt sie nicht. Die Original Award Rate passt zu `obt_outcomes`, nicht zu `v_obt_outcomes`. Die 26,3 % des Harness entstanden durch die Kohorten 2016 und 2017.
+
+**Übernommen.**
+
+- `kk.abbruchquote`: Die Standardaussage ohne Zeitangabe ist jetzt die Quote über alle reifen Kohorten ab 2018_H1, ohne Zertifikate, wie im Dashboard. Sie lässt sich je Kohorte, Programm, Campus, Fachbereich oder Eintrittsjahr aufschlüsseln. Dazu kommen das Dashboard als Quelle für den Rechenweg sowie Grundgesamtheit, Zeitbezug und Datenbefund.
+- `abschlussquote` ist die Effective Award Rate. Sie hat jetzt eine SAE-Quelle und ist auf `aktiv` gesetzt, der Standard gilt ohne Zertifikate statt mit.
+- Neu, alle `aktiv` mit dem Dashboard als Quelle: `original_award_quote`, `ende_ohne_abschluss_quote`, `upgrade_quote`, `downgrade_quote` und `reifegrad_kohorten`. Upgrade und Downgrade stehen im Dashboard nur als Ausgänge, nicht als Kopfkennzahl. Effective Award ist die Summe aus Original Award, Upgrade und Downgrade (41,0 + 11,4 + 8,3 %).
+- `obt_outcomes`: Eignung, Abdeckung (Baudatum, reife Kohorten 2016_H1 bis 2023_H1, Personenzahlen ab 2018_H1) und Beziehung zum Dashboard ergänzt.
+
+**Korrigiert.** `nichtabschlussquote` behauptete, die verbreiteten 28 bis 30 % meinten den Nichtabschluss. Das Dashboard weist 28,5 % als Abbrüche aus. Die rund 30 % der Exec Summary 2016 bis 2023 (SAE-Wissen VER-018) sind dagegen Nichtabschluss ohne spätere Wiedereinschreibung. Der Satz ist gestrichen, die Korrektur steht in `anmerkung`. Ich habe die Definition dabei in der Zeile bereinigt statt eine zweite Zeile mit `status = entfallen` anzulegen. Der Kern der Definition gilt weiter, und zwei Zeilen mit gleicher Kennung und Gültigkeit würden der Harness beide lesen.
+
+**Offen.** Ob das Dashboard Zertifikate bewusst ausschließt oder sie nur nicht in seiner Programmauswahl führt, ist nicht geprüft. Die Filterliste des Dashboards wäre der Beleg.
+

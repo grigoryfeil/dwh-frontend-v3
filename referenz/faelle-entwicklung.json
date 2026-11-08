@@ -126,14 +126,32 @@
     "Wie hoch ist die Abbruchquote im Bachelor?",
     "Ja."
    ],
-   "lesart": "Abbruchquote nach Kennzahlen v4: aktive Vertragsbeendigung (terminate) geteilt durch alle Personen der jüngsten reifen Startkohorte, Programm BA (Hons), alle Standorte. Die Rückfrage wird mit der Empfehlung (jüngste reife Kohorte) beantwortet.",
+   "lesart": "Abbruchquote nach Kennzahlen v4 und Dashboard „Student Outcomes – Cohort View“: Terminations (aktive Vertragsbeendigung) geteilt durch alle Personen der reifen Eintrittskohorten ab 2018_H1, zusammengefasst, Programm BA (Hons), alle Standorte. Das ist die Standardaussage ohne Zeitangabe. Die jüngste reife Kohorte (2023_H1, 28,9 %) ist eine zulässige Aufschlüsselung und ergibt allein unklar. Einschluss der Kohorten 2016 und 2017 (26,3 %) weicht von der Achse des Dashboards ab und gilt als verfehlt. Die Rückfrage des Analysten wird mit „Ja.“ beantwortet, die Erwartung hängt deshalb nicht von seiner Empfehlung ab.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Abbruchquote BA jüngste reife Kohorte", "werte": [28.9, 30.0], "toleranz": 0.15, "einheit": "%"}
+    {"art": "zahl", "name": "Abbruchquote BA, reife Kohorten ab 2018_H1", "werte": [30.2], "toleranz": 0.1, "einheit": "%", "werte_unklar": [28.9]}
    ],
-   "quelle": "Definition: Objektindex 08b, Blatt Kennzahlen v4 (Leitung BI, 02.11.2026), K6 Abbruchquote. Kein Bericht mit dieser Quote gefunden; die verbreiteten 30,5 % sind Nichtabschluss (siehe R-A02).",
-   "nachvollzogen": "obt_outcomes, is_mature = 1, program BA (Hons): Kohorte 2023_H1 94 von 325 = 28,9 % (jüngste reife Kohorte), 2022_H2 201 von 670 = 30,0 % (als Alternative zugelassen, letzte reife Herbstkohorte). v_obt_outcomes liefert dieselben Werte.",
-   "sicherheit": "mittel: Rechnung eindeutig, maßgebliche Tabelle (obt_outcomes oder v_obt_outcomes) laut Katalog noch offen"
+   "quelle": "Data-Studio-Dashboard „Student Outcomes – Cohort View“, Eva Elliott, Datenstand 26.10.2026 (https://datastudio.google.com/u/0/reporting/a20ae255-9c65-4f97-a7af-7c4e00c47152), Filter Programm BA (Hons): Terminations (Mature) 30,2 %; reif heißt mindestens 95 % der Kohorte abgeschlossen, Kohortenachse ab 2018_H1. Abgelesen von der Steuersession am 08.11.2026. Definition: Objektindex 08b, Blatt Kennzahlen v4, K6.",
+   "nachvollzogen": "Geändert am 08.11.2026 auf Grundlage des Dashboards als unabhängiger SAE-Quelle, nicht wegen eines Laufergebnisses. Vorher erwartet: jüngste reife Kohorte 28,9 % oder 2022_H2 30,0 %, ohne Berichtsbeleg. obt_outcomes, is_mature = 1, program BA (Hons), period_key ab 2018: 1.299 von 4.299 = 30,2 %, identisch mit dem Dashboard; v_obt_outcomes gleich. Mit 2016 und 2017: 26,3 %. Kohorte 2023_H1: 94 von 325 = 28,9 %. Die übrigen Kopfwerte des Dashboards für BA (Original Award 45,2 %, End without Award 4,7 %, Effective Award 63,8 % gegen 63,85 % auf der Kopie) stimmen ebenfalls.",
+   "sicherheit": "hoch: Dashboard und Kopie identisch"
+  },
+  {
+   "id": "R-A03",
+   "thema": "abbruch",
+   "art": "wert",
+   "rolle": "entwicklung",
+   "fragen": [
+    "Welcher Anteil unserer Bachelor-Studierenden erreicht einen Abschluss, und wie viele davon den ursprünglich angestrebten?"
+   ],
+   "lesart": "Outcome-Quoten der reifen Eintrittskohorten ab 2018_H1, Programm BA (Hons): Effective Award (irgendein Abschluss, auch nach Downgrade) und Original Award (der ursprünglich angestrebte Abschluss), wie im Dashboard „Student Outcomes – Cohort View“.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "Effective Award BA", "werte": [63.8, 63.9], "toleranz": 0.05, "einheit": "%"},
+    {"art": "zahl", "name": "Original Award BA", "werte": [45.2], "toleranz": 0.1, "einheit": "%"}
+   ],
+   "quelle": "Data-Studio-Dashboard „Student Outcomes – Cohort View“, Eva Elliott, Datenstand 26.10.2026, Filter BA (Hons): Effective Award 63,8 %, Original Award 45,2 %. Abgelesen von der Steuersession am 08.11.2026.",
+   "nachvollzogen": "obt_outcomes, is_mature = 1, program BA (Hons), period_key ab 2018: effective_award 2.745 von 4.299 = 63,85 % (Dashboard zeigt 63,8, deshalb 63,8 und 63,9 zulässig), original_award 45,2 %. Downgrades 18,4 % machen den Unterschied.",
+   "sicherheit": "hoch"
   },
   {
    "id": "R-U01",

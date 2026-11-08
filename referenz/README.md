@@ -43,7 +43,7 @@ Für Berichte an entwickelnde Sessions `--verdeckt` setzen: Dann fehlen Frage, E
 
 Prüfungen in `erwartet`, alle beziehen sich auf die Antwort der letzten Runde:
 
-- `zahl`: `werte` (eine oder mehrere zulässige Lesarten) mit `toleranz` oder `toleranz_rel`, oder `bereich`. `einheit: "%"` verlangt ein Prozentzeichen. `kontext` ist ein regulärer Ausdruck, der in derselben Zeile stehen muss, bei Tabellen genügt die Kopfzeile.
+- `zahl`: `werte` (eine oder mehrere zulässige Lesarten) mit `toleranz` oder `toleranz_rel`, oder `bereich`. `einheit: "%"` verlangt ein Prozentzeichen. `kontext` ist ein regulärer Ausdruck, der in derselben Zeile stehen muss, bei Tabellen genügt die Kopfzeile. `werte_unklar` nennt Werte, die eine zulässige Aufschlüsselung statt der Standardaussage sind: Stehen nur sie da, ist der Fall unklar.
 - `einschraenkung`: jedes Muster in `muster` kommt vor.
 - `verboten`: das Muster kommt nicht vor.
 
@@ -59,14 +59,14 @@ Ergebnis je Fall: **bestanden**, **verfehlt** oder **unklar**. Unklar heißt: Ge
 
 ## Zurückhaltung
 
-- Mindestens ein Drittel der Fälle ist `zurueckgehalten`, heute 11 von 22.
+- Mindestens ein Drittel der Fälle ist `zurueckgehalten`, heute 12 von 24.
 - Wer am Harness, an Anweisung, Katalog oder Wissen arbeitet, liest `faelle-zurueckgehalten.json` nicht und übernimmt keine dieser Fragen als Beispiel. Berichte an solche Sessions laufen mit `--verdeckt`.
 - Muss ein zurückgehaltener Fall zur Diagnose geöffnet werden, wechselt er nach `entwicklung`, und ein neuer Fall gleicher Art kommt in den zurückgehaltenen Teil.
 - Die Datei liegt derzeit im Repo und ist damit für jede Session lesbar. Ob sie getrennt abgelegt wird (etwa nur auf dem VPS), ist offen.
 
 ## Stand
 
-22 Fälle auf Bestand `b_20261106t180757z_sooc` (Lieferung 06.11.2026), angelegt 08.11.2026.
+24 Fälle auf Bestand `b_20261106t180757z_sooc` (Lieferung 06.11.2026), angelegt 08.11.2026.
 
 | Thema | entwicklung | zurückgehalten |
 |---|---:|---:|
@@ -74,8 +74,16 @@ Ergebnis je Fall: **bestanden**, **verfehlt** oder **unklar**. Unklar heißt: Ge
 | Neueinschreibungen | 1 | 1 |
 | Bestand | 1 | 2 |
 | Leads | 2 | 2 |
-| Abbruch | 1 | 1 |
+| Abbruch | 2 | 2 |
 | Umfrage | 3 | 2 |
 | Grenze ohne Daten | 1 | 1 |
 
 Davon prüfen echte Datengrenzen R-U03, R-G01, R-B02, R-L04, R-U04, R-G02; Quellgrenzen, die nicht die Grenze der Frage sind, R-F01 (Konversionskurve ab 0325), R-F04, R-N02.
+
+## Änderungen an Prüfungen
+
+| Datum | Fall | Rolle | Änderung | Grund |
+|---|---|---|---|---|
+| 08.11.2026 | R-A01 | entwicklung | Erwartung von „jüngste reife Kohorte 28,9 % oder 2022_H2 30,0 %“ auf „reife Kohorten ab 2018_H1 30,2 %“, 28,9 % ergibt nur noch unklar | Unabhängige SAE-Quelle: Dashboard „Student Outcomes – Cohort View“ (Eva Elliott, Stand 26.10.2026) legt die Standardaussage fest; Kopie identisch |
+| 08.11.2026 | R-A02 | zurückgehalten | Prüfungsänderung auf Grundlage einer unabhängigen Quelle, nicht wegen eines Laufergebnisses: Abbruchquote von Bereich 23,0 bis 29,5 % auf 28,5 % (alle Programme ohne Certificates, ab 2018_H1), 24,9 % mit Certificates ergibt unklar | Dasselbe Dashboard; vorher gab es für die Abbruchquote keinen Berichtsbeleg, alle vier Kopfwerte für alle Programme stimmen mit der Kopie überein |
+| 08.11.2026 | R-A03, R-A04 | entwicklung, zurückgehalten | neu: Effective und Original Award BA, End without Award alle Programme | relevante Geschäftsfragen mit unabhängiger Quelle (dasselbe Dashboard) |
