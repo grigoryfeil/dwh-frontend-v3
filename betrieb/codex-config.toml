@@ -103,6 +103,7 @@ description = "DWH Frontend V3: Shell ohne Zugangsdaten, Datenbank, Netz und fre
 "/var/lib/dwh-frontend-v3/codex-home/log" = "deny"
 "/var/lib/dwh-frontend-v3/codex-home/tmp" = "deny"
 "/var/lib/dwh-frontend-v3/laeufe" = "deny"
+"/var/lib/dwh-frontend-v3/ablage" = "deny"
 "/etc/dwh-frontend-v3" = "deny"
 "/etc/dwh-frontend-v2-codex" = "deny"
 "/run/dwh-frontend-db" = "deny"

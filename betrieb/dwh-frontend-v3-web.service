@@ -25,6 +25,9 @@ Environment=DWH_V3_GESPRAECHE=/var/lib/dwh-frontend-v3/gespraeche
 # Nur Technik je Runde: Zeit, Token, Status. Keine Fragen, Antworten oder SQL.
 Environment=DWH_V3_PROTOKOLL=/var/lib/dwh-frontend-v3/web-protokoll.jsonl
 Environment=DWH_V3_ZEITLIMIT=600
+# Beta-Ablage (web/ablage.py): jedes Gespräch vollständig unter /var/lib/dwh-frontend-v3/ablage/<datum>/<gespraech>/,
+# 0700/0600. Abschalten: DWH_ABLAGE=0 (oder Zeile entfernen), dann Neustart der Unit. Rückbau vor einer Auslieferung.
+Environment=DWH_ABLAGE=1
 UMask=0027
 Restart=on-failure
 RestartSec=2

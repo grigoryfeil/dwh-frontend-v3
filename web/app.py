@@ -8,9 +8,11 @@ sie begonnen hat. Endet die Session, enden ihre Gespräche. TLS übernimmt nginx
 Bedient wird nur, was die Oberfläche braucht. Export, Feedback, Ablage und Beispiele gibt es nicht, die Oberfläche
 kommt ohne sie aus (Antwort 404 bzw. `ablage: false`). Felder ohne V3-Gegenstück (`beleg`, `abfragen`, `pruefung`)
 bleiben leer. SQL geht nicht an die Seite. Dateien, die die Antwort im eigenen Gesprächsverzeichnis nennt (etwa
-Diagramme), übersetzt web/dateien.py in `dateien` und liefert nur diese aus.
+Diagramme), übersetzt web/dateien.py in `dateien` und liefert nur diese aus. Mit eingeschalteter Beta-Ablage
+(web/ablage.py) wird jedes Gespräch vollständig abgelegt, die Seite zeigt das an und bietet Feedback.
 """
 
+import asyncio
 import datetime
 import hashlib
 import hmac
@@ -39,7 +41,7 @@ import kontext  # noqa: E402
 import lauf  # noqa: E402
 from sitzung import Gespraech, Sitzungsfehler  # noqa: E402
 
-from web import dateien, fortschritt, konten  # noqa: E402
+from web import ablage as ablage_modul, dateien, fortschritt, konten  # noqa: E402
 
 STATISCH = HIER / "statisch"  # Build von oberflaeche/ (npm run build), eingecheckt, der VPS braucht kein npm
 ASSET = re.compile(r"[\w-]+\.(js|css|woff2|svg)")
@@ -70,6 +72,7 @@ class Einstellungen:
     session_leerlauf: int = 3600
     session_absolut: int = 8 * 3600
     direkt: bool = True  # Codex als Kind dieses Prozesses (Unit als dwhv3), sonst über systemd-run (als root)
+    ablage: Path | None = None  # Beta-Ablage (web/ablage.py), ohne sie weder Speichern noch Feedback
 
 
 def datenstand():
@@ -127,8 +130,13 @@ class Session:
 class Eintrag:
     """Ein Gespräch der Oberfläche: Modellprozess, Runden und Zustand der laufenden Runde."""
 
-    def __init__(self, kennung, cwd, besitzer):
-        self.kennung, self.cwd, self.besitzer = kennung, cwd, besitzer
+    def __init__(self, kennung, cwd, besitzer, benutzer=None):
+        self.kennung, self.cwd, self.besitzer, self.benutzer = kennung, cwd, besitzer, benutzer
+        self.begonnen = jetzt_iso()
+        self.speichern = False  # Beta-Ablage: Runden, die bei eingeschaltetem Speichern enden, werden abgelegt
+        self.archiv = {}  # Nummer -> vollständige Runde für die Ablage, auch für ein späteres Einschalten
+        self.gespeichert = set()
+        self.ablage_sperre = threading.Lock()
         self.gespraech = None  # wird im Hintergrund gestartet, das dauert einige Sekunden
         self.runden = []
         self.laeuft = False
@@ -169,6 +177,13 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
         def gespraech_fabrik(cwd):
             return Gespraech(cwd, anweisung, zeitlimit=e.zeitlimit, direkt=e.direkt)
 
+    ablage = ablage_modul.Ablage(e.ablage) if e.ablage else None
+    pruefsumme = None
+    if ablage and anweisung:
+        try:
+            pruefsumme = ablage.anweisung(anweisung)
+        except OSError as fehl:
+            ablage_modul.melde(fehl)
     for alt in e.gespraeche.glob("web-*"):  # Gespräche überleben keinen Neustart
         shutil.rmtree(alt, ignore_errors=True)
     kontendatei = konten.Konten(e.konten)
@@ -254,11 +269,77 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
 
     # Runde im Hintergrund
 
+    def sichern(eintrag):
+        """Legt alle festgehaltenen, noch nicht abgelegten Runden samt Dateien ab und schreibt das Gespräch neu."""
+        datum = eintrag.begonnen[:10]
+        try:
+            with eintrag.ablage_sperre:
+                for n in sorted(set(eintrag.archiv) - eintrag.gespeichert):
+                    runde = eintrag.archiv[n]
+                    runde["abgelegte_dateien"] = ablage.dateien(datum, eintrag.kennung, n, runde.pop("neue_dateien", []),
+                                                                lambda name: dateien.oeffne(eintrag.cwd, name))
+                    eintrag.gespeichert.add(n)
+                schema = None
+                try:
+                    schema = lauf.datenstand()[1]
+                except (KeyError, ValueError, OSError):
+                    pass
+                ablage.gespraech(datum, eintrag.kennung, {
+                    "gespraech": eintrag.kennung, "benutzer": eintrag.benutzer, "begonnen": eintrag.begonnen,
+                    "version": version(), "datenstand": stand_iso, "schema": schema,
+                    "codex": getattr(eintrag.gespraech, "codex_version", None),
+                    "modell": getattr(eintrag.gespraech, "modell", None),
+                    "aufwand": getattr(eintrag.gespraech, "aufwand", None), "anweisung": pruefsumme,
+                    "runden": [eintrag.archiv[n] for n in sorted(eintrag.gespeichert)]})
+        except OSError as fehl:
+            ablage_modul.melde(fehl)
+
+    def archiviere(eintrag, nummer, runde, status, items, vorher, ergebnis=None):
+        """Hält die beendete Runde vollständig fest und legt sie ab, wenn Speichern an ist. Vor dem Schließen des
+        Gesprächs aufrufen, danach ist sein Verzeichnis fort."""
+        if not ablage:
+            return
+        try:
+            neu = ablage_modul.neue_dateien(vorher, ablage_modul.dateistand(eintrag.cwd))
+            eintrag_runde = {
+                "nummer": nummer, "frage": runde["frage"], "zeit": runde["zeit"], "status": status,
+                "fehler": runde.get("fehler"), "verifizieren": runde.get("verifizieren"),
+                "antwort": runde.get("antwort"),
+                "antwort_modell": ergebnis.text if ergebnis and ergebnis.text != runde.get("antwort") else None,
+                "dateien": runde.get("dateien") or [],
+                "sekunden": ergebnis.sekunden if ergebnis else None, "token": ergebnis.token if ergebnis else None,
+                "modellanfragen": ergebnis.modellanfragen if ergebnis else None,
+                "schritte": [s for s in map(ablage_modul.schritt, items) if s], "neue_dateien": neu}
+            with eintrag.ablage_sperre:
+                eintrag.archiv[nummer] = eintrag_runde
+        except Exception as fehl:  # noqa: BLE001, die Ablage stört das Gespräch nie
+            ablage_modul.melde(fehl)
+            return
+        if eintrag.speichern:
+            sichern(eintrag)
+
     def beantworte(eintrag, runde):
         nummer = len(eintrag.runden)
         beobachter = fortschritt.Fortschritt()
+        items = []  # abgeschlossene Items der Runde, auch für abgebrochene und gescheiterte Runden
+        vorher = ablage_modul.dateistand(eintrag.cwd) if ablage else {}
         with sperre:
             eintrag.fortschritt = beobachter
+
+        def beobachte(n, g):
+            beobachter.ereignis(n, g._turn_id)
+            p = n.get("params") or {}
+            if n.get("method") == "item/completed" and p.get("turnId") == g._turn_id:
+                items.append(p.get("item") or {})
+
+        def abgebrochen(ergebnis=None):
+            protokolliere(eintrag, nummer, "abgebrochen", ergebnis)
+            with sperre:
+                runde["abgebrochen"] = True
+                eintrag.laeuft, eintrag.abbruch, eintrag.fortschritt = False, None, None
+                eintrag.zuletzt = time.monotonic()
+            archiviere(eintrag, nummer, runde, "abgebrochen", items, vorher, ergebnis)
+
         try:
             if eintrag.gespraech is None:
                 g = gespraech_fabrik(eintrag.cwd)
@@ -267,16 +348,11 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
             if eintrag.abbruch:
                 raise Sitzungsfehler("Runde abgebrochen")
             g = eintrag.gespraech
-            ergebnis = g.frage(runde["frage"], beobachter=lambda n: beobachter.ereignis(n, g._turn_id))
+            ergebnis = g.frage(runde["frage"], beobachter=lambda n: beobachte(n, g))
         except Exception as fehl:  # noqa: BLE001, jede Ausnahme beendet die Runde
             if eintrag.abbruch and isinstance(fehl, Sitzungsfehler) and eintrag.gespraech is not None \
                     and eintrag.gespraech.thread_id:
-                protokolliere(eintrag, nummer, "abgebrochen")
-                with sperre:
-                    runde["abgebrochen"] = True
-                    eintrag.laeuft, eintrag.abbruch, eintrag.fortschritt = False, None, None
-                    eintrag.zuletzt = time.monotonic()
-                return
+                return abgebrochen()
             meldung = str(fehl) if isinstance(fehl, Sitzungsfehler) else "interner Fehler"
             protokolliere(eintrag, nummer, "fehler", fehler=meldung)
             with sperre:
@@ -285,22 +361,19 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
                 else:
                     runde["fehler"] = meldung
                 eintrag.laeuft, eintrag.fortschritt = False, None
+            archiviere(eintrag, nummer, runde, "abgebrochen" if eintrag.abbruch else "fehler", items, vorher)
             eintrag.schliessen()
             return
         if eintrag.abbruch:  # wer abbricht, will die Antwort nicht mehr, auch wenn sie schon stand
-            protokolliere(eintrag, nummer, "abgebrochen", ergebnis)
-            with sperre:
-                runde["abgebrochen"] = True
-                eintrag.laeuft, eintrag.abbruch, eintrag.fortschritt = False, None, None
-                eintrag.zuletzt = time.monotonic()
-            return
+            return abgebrochen(ergebnis)
         protokolliere(eintrag, nummer, "fertig", ergebnis)
         antwort, gemeldet = dateien.uebersetze(ergebnis.text, eintrag.cwd, eintrag.kennung)
         with sperre:
-            runde.update(antwort=antwort, dateien=gemeldet, ms=int(ergebnis.sekunden * 1000), stufen=beobachter.stufen(fertig=True),
-                         schritte=beobachter.schritte)
+            runde.update(antwort=antwort, dateien=gemeldet, ms=int(ergebnis.sekunden * 1000),
+                         stufen=beobachter.stufen(fertig=True), schritte=beobachter.schritte)
             eintrag.laeuft, eintrag.fortschritt = False, None
             eintrag.zuletzt = time.monotonic()
+        archiviere(eintrag, nummer, runde, "fertig", ergebnis.items, vorher, ergebnis)
 
     # Routen
 
@@ -360,14 +433,14 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
         s = hole_session(request)
         if s is None:
             return nicht_angemeldet()
-        return JSONResponse({"email": s.email, "ablage": False})
+        return JSONResponse({"email": s.email, "ablage": ablage is not None})
 
     async def fragen(request):
         s = hole_session(request)
         if s is None:
             return nicht_angemeldet()
         # `verifizieren` wird später der optionale Prüfrunden-Schalter (README, Bauweise). Bis dahin angenommen
-        # und ignoriert, ebenso `schnell` und `speichern` aus V2.
+        # und ignoriert, ebenso `schnell`. `speichern` ist der Schalter der Seite für die Beta-Ablage.
         daten = json_body(await request.body(), [("text", str), ("verifizieren", bool), ("schnell", bool),
                                                  ("speichern", bool)])
         if daten is None:
@@ -388,7 +461,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
                 kennung = secrets.token_hex(16)
                 cwd = e.gespraeche / f"web-{kennung}"
                 cwd.mkdir(mode=0o750)
-                eintrag = Eintrag(kennung, cwd, s.ref)
+                eintrag = Eintrag(kennung, cwd, s.ref, s.email)
                 gespraeche[kennung] = eintrag
             else:
                 eintrag = gespraeche.get(kennung)
@@ -399,6 +472,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
                 if eintrag.laeuft:
                     return fehler(409, "Im Gespräch läuft noch eine Frage")
             eintrag.runden.append(runde)
+            eintrag.speichern = bool(daten.get("speichern")) and ablage is not None
             eintrag.laeuft = True
             eintrag.abbruch = None
             eintrag.zuletzt = time.monotonic()
@@ -453,6 +527,53 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
         art = "inline" if endung in dateien.BILD else f"attachment; filename=\"{quote(name.split('/')[-1])}\""
         return Response(inhalt, media_type=dateien.ARTEN[endung],
                         headers={**dateien.KOEPFE, "Content-Disposition": art})
+
+    async def speichern_schalten(request):
+        """Beta: Speichern an oder aus, gilt für jede Runde, die danach endet. Einschalten legt auch die früheren
+        Runden des Gesprächs ab."""
+        s = hole_session(request)
+        if s is None:
+            return nicht_angemeldet()
+        daten = json_body(await request.body(), [("an", bool)])
+        if not ablage:
+            return fehler(503, "Speichern ist auf diesem Server abgeschaltet")
+        if daten is None:
+            return fehler(422, "Ungültiger Schalter")
+        with sperre:
+            eintrag = eigenes(request, s)
+            if eintrag is None:
+                return fehler(404, "Gespräch unbekannt")
+            eintrag.speichern = bool(daten.get("an"))
+        if eintrag.speichern:
+            await asyncio.to_thread(sichern, eintrag)
+        return JSONResponse({"speichern": eintrag.speichern})
+
+    async def feedback(request):
+        """Beta: Rückmeldung in die Ablage, mit dem Gespräch auf Wunsch auch nachträglich gesichert."""
+        s = hole_session(request)
+        if s is None:
+            return nicht_angemeldet()
+        if not ablage:
+            return fehler(503, "Feedback ist auf diesem Server abgeschaltet")
+        daten = json_body(await request.body(), [("text", str), ("mitsenden", bool)])
+        text = (daten or {}).get("text", "").strip()
+        kennung = (daten or {}).get("gespraech")
+        if not text or len(text) > 4000 or not (kennung is None or isinstance(kennung, str)):
+            return fehler(422, "Ungültiges Feedback")
+        eintrag = None
+        if kennung and daten.get("mitsenden", True):
+            with sperre:
+                eintrag = gespraeche.get(kennung)
+                if eintrag is None or eintrag.besitzer != s.ref:
+                    return fehler(404, "Gespräch unbekannt")
+            await asyncio.to_thread(sichern, eintrag)
+        try:
+            name = ablage.feedback({"zeit": jetzt_iso(), "benutzer": s.email, "text": text, "gespraech": kennung,
+                                    "ablage": f"{eintrag.begonnen[:10]}/{kennung}" if eintrag else None,
+                                    "version": version()})
+        except OSError:
+            return fehler(503, "Feedback konnte nicht abgelegt werden")
+        return JSONResponse({"feedback": name}, status_code=201)
 
     def abbrechen(request):
         s = hole_session(request)
@@ -527,6 +648,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
         Route("/api/gespraeche/{kennung}", gespraech, methods=["GET", "DELETE"]),
         Route("/api/gespraeche/{kennung}/abbrechen", abbrechen, methods=["POST"]),
         Route("/api/gespraeche/{kennung}/dateien/{name:path}", datei),
+        Route("/api/gespraeche/{kennung}/speichern", speichern_schalten, methods=["POST"]),
+        Route("/api/feedback", feedback, methods=["POST"]),
     ]
     return Starlette(routes=routen, middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=e.hosts),
                                                 Middleware(Schutz)])
@@ -542,4 +665,6 @@ def aus_umgebung():
         sicher=os.environ.get("DWH_V3_UNSICHER") != "1",
         zeitlimit=int(os.environ.get("DWH_V3_ZEITLIMIT", "600")),
         direkt=os.environ.get("DWH_V3_DIREKT", "1") == "1",
+        ablage=Path(os.environ.get("DWH_V3_ABLAGE_PFAD", "/var/lib/dwh-frontend-v3/ablage"))
+        if os.environ.get("DWH_ABLAGE") == "1" else None,
     ))

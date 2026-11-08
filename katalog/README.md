@@ -9,7 +9,7 @@ Der Katalog beschreibt, was die Objekte, Felder und Kennzahlen der DWH-Kopie bed
 | `objekte.csv` | eine Zeile je Tabelle oder View |
 | `felder.csv` | eine Zeile je Spalte eines Objekts |
 | `kennzahlen.csv` | eine Zeile je Kennzahl |
-| `review.md` | Bericht zur Erstbefüllung: Übernahmen, Streichungen, Widersprüche, offene Fragen |
+| `review.md` | Bericht zur Erstbefüllung und zur zweiten Runde: Übernahmen, Streichungen, Widersprüche, Varianten, offene Fragen |
 
 Format: CSV, Semikolon als Trennzeichen, UTF-8 mit BOM, Texte mit Semikolon, Anführungszeichen oder Zeilenumbruch stehen in Anführungszeichen. Die Dateien öffnen direkt in deutschem Excel. Beim Speichern aus Excel „CSV UTF-8 (durch Trennzeichen getrennt)“ wählen. Zeilenumbrüche innerhalb einer Zelle sind erlaubt und trennen in `werte` und `anmerkung` einzelne Aussagen.
 
@@ -38,6 +38,10 @@ Gültigkeit bezieht sich auf die Zeit der Daten, nicht auf das Datum, an dem jem
 | `typ` | `Tabelle` oder `View`, wie im Quell-DWH. In der Kopie liegen alle Objekte als Tabellen vor. |
 | `granularitaet` | Was eine Zeile ist. |
 | `schluessel` | Spalten, die eine Zeile fachlich eindeutig machen. Der in der Kopie deklarierte Schlüssel steht in `anmerkung`, wenn er abweicht. |
+| `thema` | Fachgebiet: `leads`, `funnel` (Opportunities, Recruiting-Kohorten, Cockpit), `aktivitaeten` (Calls, Tours, Tasks), `einschreibungen` (CAS-Verträge, Zertifikate), `ziele` (Ziele und Prognosen), `bestand`, `studienverlauf`, `umfragen`, `stammdaten`, `kalender`, `finanzen`. |
+| `eignung` | Wofür das Objekt fachlich taugt und wofür nicht, jeweils mit Grund und, wo es eine gibt, der Quelle, die die Größe trägt („dafür …“). Beschreibt die Sache, keine Anweisung. Die Herkunft steht in eckigen Klammern. |
+| `abdeckung` | Gegen die Kopie gemessen: Zeilenzahl, Zeitraum der Zeitspalte und die Intakes oder Kohorten mit Daten, mit Messdatum und Bestand. Bei Funnel-Quellen zusätzlich der letzte Stand bis zum Census Date. Beobachtung, keine Definition. |
+| `verwandt` | Beziehungen zu anderen Objekten: abgeleitet aus, Grundlage von, Teilmenge oder Obermenge, gleicher Inhalt, gleiche Größe anders gezählt oder abgegrenzt. Verknüpfungen über Schlüssel stehen in `felder.csv` (`verweist_auf`) und in `anmerkung`. |
 
 ### felder.csv
 
@@ -54,10 +58,16 @@ Gültigkeit bezieht sich auf die Zeit der Daten, nicht auf das Datum, an dem jem
 
 | Spalte | Bedeutung |
 |---|---|
-| `kennzahl_id` | Stabile Kennung. `kk.*` sind die Kernkennzahlen aus dem Kennzahlenkatalog der Leitung BI, die übrigen tragen die Kennung aus der V2-Bedeutungsschicht. |
+| `kennzahl_id` | Stabile Kennung. `kk.*` sind die Kernkennzahlen aus dem Kennzahlenkatalog der Leitung BI, die übrigen tragen die Kennung aus der V2-Bedeutungsschicht oder eine neue Kennung. Verschiedene Geschäftskennzahlen bekommen verschiedene Kennungen, auch wenn sie im Alltag gleich heißen. |
 | `name` | Name der Kennzahl in Sprache der SAE. |
+| `thema` | Fachgebiet, dieselben Werte wie in `objekte.csv`. |
 | `berechnung` | Wie die Kennzahl fachlich entsteht, mit Bezug auf `feld_id`s und bei Quoten auf `kennzahl_id`s. |
 | `einheit` | Einheit, in Klammern die Zähleinheit. |
+| `zaehleinheit` | Was gezählt wird: Opportunity, Vertrag, Person, Lead, Antwort … Bei Quoten aus zwei Systemen getrennt für Zähler und Nenner. |
+| `grundgesamtheit` | Welche Elemente überhaupt zählen: Marke, Standorte, Produkte, Ausschlüsse. |
+| `zeitbezug` | Stichtag (Bestand an einem Tag), Zeitraum (Fluss) oder Kohorte, mit dem maßgeblichen Datumsfeld. |
+| `quellen` | Objekte, aus denen die Kennzahl kommt, mit gemessener Abdeckung. Wechselt die maßgebliche Quelle über die Zeit, steht jede mit ihrem Zeitraum oder ihren Intakes da. |
+| `verwandt` | Varianten und abgegrenzte Nachbarkennzahlen mit dem Unterschied in Klammern. |
 
 ## Status
 
@@ -91,3 +101,5 @@ Gültigkeit bezieht sich auf die Zeit der Daten, nicht auf das Datum, an dem jem
 - **Widersprechen sich Quellen**, gilt die belegte Fassung. Der Widerspruch steht als `Konflikt` in `anmerkung`.
 - **Neue Lieferung:** `datenstand` der geprüften Zeilen nachziehen. Neue Objekte und Spalten bekommen eine Zeile mit `status = neu`, auch ohne Definition. Fehlende bekommen `status = entfallen`, ihre Zeile bleibt stehen.
 - **Vollständigkeit:** Jedes Objekt und jede Spalte der Kopie hat eine Zeile, auch ohne bekannte Definition.
+- **Abdeckung nachmessen:** Mit jeder neuen Lieferung `abdeckung` und `quellen` gegen die Kopie neu messen und Messdatum und Bestand nachziehen. Eine Änderung der Abdeckung ist keine Änderung der Definition und braucht keine neue Zeile.
+- **Varianten trennen:** Bedeutet derselbe Name in zwei Quellen Verschiedenes (andere Zähleinheit, Grundgesamtheit oder anderer Zeitbezug), bekommt jede Lesart eine eigene `kennzahl_id`, und beide nennen sich gegenseitig in `verwandt`.

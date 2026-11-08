@@ -12,6 +12,9 @@ zugang=/etc/dwh-frontend-v3/zugang  # Testkonto für Grigory: Benutzer und Passw
 
 /opt/dwh-frontend-v3/venv/bin/pip install -q "starlette==1.10.0" "uvicorn==0.54.0"
 
+# Beta-Ablage der Gespräche: nur Dienst und root
+install -d -m 0700 -o dwhv3 -g dwhv3 /var/lib/dwh-frontend-v3/ablage
+
 # Konten und Testkonto: Passwort einmalig erzeugen, nie ausgeben
 [[ -e $konten ]] || install -m 0640 -o root -g dwhv3 /dev/null "$konten"
 chown root:dwhv3 "$konten" && chmod 0640 "$konten"

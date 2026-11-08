@@ -1,0 +1,201 @@
+{
+ "beschreibung": "Zurückgehaltene Referenzfälle. Nicht beim Entwickeln lesen, nicht als Beispiel in Anweisung, Katalog oder Wissen übernehmen. Nur vergleich.py wertet sie aus, berichtet wird nur bestanden, verfehlt oder unklar. Regeln: referenz/README.md.",
+ "faelle": [
+  {
+   "id": "R-F02",
+   "thema": "funnel",
+   "art": "wert",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie hoch war die Conversion Rate von Opportunities zu Enrollments im Intake 0926, so wie das Weekly Bulletin sie rechnet?"
+   ],
+   "lesart": "Bulletin-Lesart (SAE-Wissen FUN-046): Kern-Enrollments geteilt durch alle für den Intake angelegten Opportunities einschließlich verlorener, regional mit Genf, letzter Wochenstand vor dem Census Date (20.09.2026). Nicht die Katalogfassung kk.cr_opp_enrollment (gleiche Produktkategorie, 20,2 %).",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "CR 0926 Bulletin-Lesart", "bereich": [17.0, 17.8], "einheit": "%"}
+   ],
+   "quelle": "Weekly Marketing & Sales Bulletin vom 21.09.2026 (Stichtag 20.09.), Enrollments und Opportunities 926 je Campus, Summe 1.012 von 5.885 = 17,2 %; SAE-Wissen FUN-047: 0926 regional 17,2 bis 17,6 %. Rohauszug bc-10322911848.txt.",
+   "nachvollzogen": "dashboard_opps, intake 0926, key_date 2026-09-20: Core num_converted 1.015, alle Opportunities 5.771, 17,6 %. Mit opps_raw als Nenner (5.897) 17,2 %. Je Campus weichen Enrollments um höchstens 7 ab (ZRH 134 gegen 127).",
+   "sicherheit": "hoch"
+  },
+  {
+   "id": "R-F04",
+   "thema": "funnel",
+   "art": "quellgrenze",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie viele Opportunities hatten wir im Herbstintake 2025 im Vergleich zum Herbstintake 2026, jeweils zum Census Date?"
+   ],
+   "lesart": "Opportunities je Intake am letzten Wochenstand bis zum Census Date. dashboard_opps führt erst ab 0326, für 0925 liegen Stände in kpis_opps (25T3), opps_raw und cockpit_l2e_parts. Die Grenze von dashboard_opps ist nicht die Grenze der Frage.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "Opportunities 0925", "bereich": [4900, 5750], "kontext": "0925|09/25|25T3|2025|Vorjahr"},
+    {"art": "zahl", "name": "Opportunities 0926", "bereich": [4800, 5950], "kontext": "0926|09/26|26T3|2026"}
+   ],
+   "quelle": "Weekly Bulletin 21.09.2026: 0926 Summe 5.885 Opportunities, je Campus mit PCP-Vergleich (Vorjahr). Für 0925 kein Berichtswert gelesen, nur nachgerechnet.",
+   "nachvollzogen": "0925: kpis_opps 25T3 am 21.09.2025 5.387, opps_raw 0925 am 07.09.2025 (letzter Stand) 5.714, cockpit_l2e_parts Fall 2025 interviewed 4.916. 0926: dashboard_opps 20.09.2026 5.771, opps_raw 5.897, kpis_opps 5.778, Cockpit 4.828. Bereiche umfassen die Quellen.",
+   "sicherheit": "mittel: 0926 vom Bulletin gedeckt, 0925 je nach Quelle 4.916 bis 5.714"
+  },
+  {
+   "id": "R-N02",
+   "thema": "neueinschreibungen",
+   "art": "quellgrenze",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie viele Neueinschreibungen hatten wir im März 2026 im Vergleich zum März 2025?"
+   ],
+   "lesart": "Neueinschreibungen nach Kennzahlen v4 (CAS-Verträge nach Census), Intake 0326 gegen 0325, Kern oder gesamt. Salesforce-Stände in dashboard_opps beginnen erst mit 0326, die CAS-Verträge reichen bis 2016 zurück.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "März 2026", "werte": [652, 753, 639], "toleranz": 3, "kontext": "0326|03/26|26T2|2026"},
+    {"art": "zahl", "name": "März 2025", "werte": [853, 962, 840], "toleranz": 3, "kontext": "0325|03/25|25T2|2025|Vorjahr"}
+   ],
+   "quelle": "Definition: Objektindex 08b, Blatt Kennzahlen v4, K2. Gegenprobe Salesforce: Goals-Sheet „2026 - Goals - Intake 0326“, ACTUALS-TODAY, Study 707 (Diploma 323, Bachelor 288, Top-ups 95, Master 1), Stand 30.04.2026.",
+   "nachvollzogen": "v_sales_prediction_data, netto, nach Census: start_month 2026-03 Core 652, Top-up 100, Master 1 (gesamt 753); 2025-03 Core 853, Top-up 109 (gesamt 962). Ohne Genf Kern 639 und 840. Goals-Sheet Kern (Diploma plus Bachelor) 611 liegt 6 % unter CAS.",
+   "sicherheit": "hoch für die Rechnung"
+  },
+  {
+   "id": "R-B02",
+   "thema": "bestand",
+   "art": "grenze",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie viele Studierende hatten wir im Oktober 2018?"
+   ],
+   "lesart": "Headcount zum Monatsstichtag. Die Monatsbestände in StudentStatistics beginnen am 25.01.2019. Erwartet ist die benannte Grenze; eine offen gekennzeichnete Näherung aus Vertragsdaten ist zulässig, wird aber nicht geprüft.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "einschraenkung", "name": "Beginn 2019 benannt", "muster": ["(erst|ab|seit|beginn|frühest|Januar|01/|liegen).{0,60}2019"]}
+   ],
+   "quelle": "Katalog-Session-Befund (Übergabe wissen, 08.11.2026): Monatsbestand StudentStatistics zum 25. seit 01/2019.",
+   "nachvollzogen": "StudentStatistics: min(Key_date) 2019-01-25, erster Oktoberstand 25.10.2019 mit 3.584 Heads.",
+   "sicherheit": "hoch"
+  },
+  {
+   "id": "R-B03",
+   "thema": "bestand",
+   "art": "wert",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie viele Studierende hatten wir Ende März 2026?"
+   ],
+   "lesart": "Headcount am Monatsstichtag 25.03.2026, Summe Heads einschließlich DUO. Genf gehörte damals zur Region (3.556), ohne Genf im heutigen Standortkreis 3.364.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "Bestand 25.03.2026", "werte": [3556, 3364]}
+   ],
+   "quelle": "Definition: Objektindex 08b, Blatt Kennzahlen v4, K3. Kein Bestandsbericht mit Zahlen lesbar.",
+   "nachvollzogen": "StudentStatistics, Key_date 2026-03-25: 3.556 Heads, ohne GVA 3.364.",
+   "sicherheit": "mittel: nachgerechnet, kein Berichtsbeleg"
+  },
+  {
+   "id": "R-L02",
+   "thema": "leads",
+   "art": "wert",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie viele neue Leads hatten wir in der Woche vom 26. Oktober bis 1. November 2026, insgesamt und je Campus?"
+   ],
+   "lesart": "Neue Leads nach Erstellungstag, Montag 26.10. bis Sonntag 01.11.2026 (Datenwoche des Bulletins), je Campus. Mit oder ohne Genf zulässig.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "Woche gesamt", "bereich": [1235, 1275], "kontext": "gesamt|insgesamt|Region|Summe|zusammen|alle"},
+    {"art": "zahl", "name": "Berlin", "werte": [120], "toleranz": 1, "kontext": "Berlin|BER"},
+    {"art": "zahl", "name": "Wien", "werte": [180, 181], "kontext": "Wien|Vienna|VIE"}
+   ],
+   "quelle": "Weekly Marketing & Sales Bulletin vom 02.11.2026, je Campus „new leads last week“: AMS 88, BER 120, BO 66, COL 115, FFM 86, GVA 15, HAN 70, HH 132, LEI 71, MUC 65, NBG 43, STU 78, VIE 180, ZRH 128, Summe 1.257 (ohne Genf 1.242).",
+   "nachvollzogen": "Leads_First_Touch_Lead_Source, Keydate 26.10. bis 01.11.2026: Summe 1.266 (ohne Genf 1.250), Berlin 120, Wien 181. Abweichungen je Campus bis 3, erklärbar durch Nachbuchungen zwischen 02.11. und 06.11.",
+   "sicherheit": "hoch"
+  },
+  {
+   "id": "R-L04",
+   "thema": "leads",
+   "art": "grenze",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie viele Leads hatten wir 2023 im Vergleich zu 2025?"
+   ],
+   "lesart": "Jahressummen neuer Leads. Leads_First_Touch_Lead_Source beginnt am 01.02.2024, sales_cohort_persons enthält für 2023 nur 2.259 Leads und ist vor 2025 erkennbar unvollständig (2024: 23.996 gegen 53.155). 2023 ist damit nicht beantwortbar, 2025 schon (52.220).",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "einschraenkung", "name": "Grenze 2023 benannt", "muster": ["2023.{0,160}(fehl|nicht (vollständig|verfügbar|vorhanden|enthalten|belastbar)|unvollständig|kein|Lücke)|(fehl|unvollständig|nicht vollständig|kein|Lücke).{0,160}2023|(ab|seit|erst|beginn).{0,40}(Februar 2024|02/2024|01[.]02[.]2024)"]},
+    {"art": "zahl", "name": "Leads 2025", "werte": [52220], "toleranz_rel": 0.01, "kontext": "2025"},
+    {"art": "verboten", "name": "Unvollständige Kohortensumme als 2023-Wert", "muster": "(?<![0-9])2[.]?259(?![0-9])"}
+   ],
+   "quelle": "DWH-Audit 14.08.2026 (Übergabe wissen: Lead-Lücke, bi_opps); Struktur der Kopie.",
+   "nachvollzogen": "Leads_First_Touch_Lead_Source: min(Keydate) 2024-02-01; Jahr 2025 52.220 (Februar 2025 mit 27 Tagen). sales_cohort_persons, brand SAE, Jahr von d_lead: 2023 2.259, 2024 23.996, 2025 53.869.",
+   "sicherheit": "hoch"
+  },
+  {
+   "id": "R-A02",
+   "thema": "abbruch",
+   "art": "wert",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Stimmt es, dass rund 30 Prozent unserer Studierenden abbrechen?"
+   ],
+   "lesart": "Die verbreiteten rund 30 % stammen aus der Exec Summary „Student Attrition Analysis: 2016-2023 Cohorts“ und messen Nichtabschluss (ohne Abschluss und ohne Wiedereinschreibung), nicht Abbruch. Die Abbruchquote nach Kennzahlen v4 (terminate in reifen Kohorten) liegt bei rund 24 bis 26 %. Erwartet: diese Unterscheidung und eine Abbruchquote im Bereich.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "einschraenkung", "name": "Nichtabschluss unterschieden", "muster": ["Nichtabschluss|Nicht-Abschluss|ohne Abschluss|keinen Abschluss|nicht abgeschlossen|Abschluss nicht"]},
+    {"art": "zahl", "name": "Abbruchquote reife Kohorten", "bereich": [23.0, 29.5], "einheit": "%", "kontext": "Abbruch|abgebrochen|beend|Kündig|terminat"}
+   ],
+   "quelle": "Drive „attrition_executive_summary_20260430.pdf“, Data Analyst BI, 30.04.2026: 4.121 von 13.490 Personen der Startkohorten 2016 bis 2023 ohne Certificate, 30,5 %, Nichtabschluss. SAE-Wissen VER-018.",
+   "nachvollzogen": "Die 30,5 % sind auf der Kopie nicht reproduzierbar (obt_outcomes 2016 bis 2023: 17.517 Datensätze, andere Grundgesamtheit). Abbruch: obt_outcomes, is_mature = 1, Kohorten 2016 bis 2023_H1 zusammen 3.936 von 16.200 = 24,3 %; je reifer Halbjahreskohorte 2022_H1 23,6 %, 2022_H2 27,6 %, 2023_H1 24,7 %.",
+   "sicherheit": "mittel: Einordnung belegt, Bereich der Abbruchquote breit"
+  },
+  {
+   "id": "R-U02",
+   "thema": "umfrage",
+   "art": "wert",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Unterscheidet sich die Weiterempfehlung zwischen Diploma- und Bachelor-Studierenden in der Umfrage vom August 2026?"
+   ],
+   "lesart": "Weiterempfehlung je Abschlussart (award_code Dipl und BA), Welle August 2026.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "zahl", "name": "Diploma", "werte": [84.7], "toleranz": 0.1, "einheit": "%", "kontext": "Diplom"},
+    {"art": "zahl", "name": "Bachelor", "werte": [72.7], "toleranz": 0.1, "einheit": "%", "kontext": "Bachelor|BA\\b"}
+   ],
+   "quelle": "Semesterumfrage-GSAN-Bericht August 2026 (Final), S. 12 Abschnitt Award: Diploma 84,7 %, Bachelor 72,7 %.",
+   "nachvollzogen": "survey_student_semester, August 2026: Dipl 626 Antworten 84,7 %, BA 216 Antworten 72,7 %, MA 5 Antworten.",
+   "sicherheit": "hoch"
+  },
+  {
+   "id": "R-U04",
+   "thema": "umfrage",
+   "art": "grenze",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie hoch war die Rücklaufquote der Semesterumfrage im August 2026?"
+   ],
+   "lesart": "Teilnahmequote = abgegebene Fragebögen durch eingeladene Studierende. Die Kopie enthält die Antworten (847), aber nicht die Zahl der Eingeladenen. Erwartet: die Grenze benannt; ein Hinweis auf den Berichtswert (28 %) oder eine gekennzeichnete Näherung ist zulässig.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "einschraenkung", "name": "Eingeladene fehlen", "muster": ["Eingeladen|eingeladen|Einladung|angeschrieben|Grundgesamtheit|Befragungsberechtigt|Zahl der (Studierenden|Befragten)", "nicht|kein|fehl"]}
+   ],
+   "quelle": "Semesterumfrage-GSAN-Bericht August 2026 (Final), S. 6 und Glossar S. 57: Teilnahmequote 28 % (März 29 %), Definition Fragebögen durch eingeladene Studierende. Katalog kk.weiterempfehlung: Zahl der Eingeladenen fehlt.",
+   "nachvollzogen": "survey_student_semester hat keine Spalte und keine Begleittabelle mit Eingeladenen; 847 Antworten in der Welle August 2026.",
+   "sicherheit": "hoch"
+  },
+  {
+   "id": "R-G02",
+   "thema": "grenze",
+   "art": "grenze",
+   "rolle": "zurueckgehalten",
+   "fragen": [
+    "Wie hoch waren die Personalkosten je Campus im letzten Geschäftsjahr?"
+   ],
+   "lesart": "Personal- und Finanzdaten liegen nicht im DWH. Erwartet: klare Aussage ohne Ersatzzahl.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {"art": "einschraenkung", "name": "Nicht beantwortbar", "muster": ["(nicht|keine).{0,80}(Daten|enthalten|vorhanden|verfügbar|erfasst|DWH|beantwort)"]},
+    {"art": "verboten", "name": "Eurobetrag", "muster": "[0-9][0-9.,]* ?(€|EUR|Euro|Mio)"}
+   ],
+   "quelle": "SAE-Wissen SYS-005 (Finanz- und Personaldaten nicht im DWH); Tabellenliste der Kopie.",
+   "nachvollzogen": "Tabellenliste von b_20261106t180757z_sooc: keine Kosten-, Personal- oder Buchhaltungstabelle; kpis_tuition enthält Studiengebühren der Pipeline, keine Kosten.",
+   "sicherheit": "hoch"
+  }
+ ]
+}

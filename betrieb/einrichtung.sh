@@ -47,6 +47,8 @@ install -d -m 0755 "$APP.neu"
 cp -r "$quelle/harness" "$quelle/katalog" "$quelle/VERSION" "$APP.neu/"
 [[ -d $quelle/wissen ]] && cp -r "$quelle/wissen" "$APP.neu/"
 [[ -d $quelle/web ]] && cp -r "$quelle/web" "$APP.neu/"
+# Themenansichten aus Katalog und SAE-Wissen erzeugen (die Anweisung verweist darauf)
+python3 -I "$APP.neu/harness/kontext.py" --themen "$APP.neu/katalog" "$APP.neu/wissen" "$APP.neu/kontext" 2>/dev/null
 chown -R root:root "$APP.neu" && chmod -R a+rX "$APP.neu"
 rm -rf "$APP" && mv "$APP.neu" "$APP"
 
