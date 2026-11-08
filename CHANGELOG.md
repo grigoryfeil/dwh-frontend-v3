@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2 (08.11.2026)
+
+- Testtreiber: `--pruefen` fährt jede Antwort durch die Prüfrunde wie der Schalter Verify, mit Weitergabe der Korrektur an die nächste Frage. Der Text dieser Weitergabe kommt für Oberfläche und Testtreiber aus `pruefung.mit_korrektur`.
+
 ## 0.6.1 (08.11.2026)
 
 - Schalter „Fast“ vollständig entfernt (Oberfläche, Typen, Backend, Betriebsskripte, Tests). Er war aus V2 übernommen und ohne Wirkung. Einziger Schalter ist „Verify“.

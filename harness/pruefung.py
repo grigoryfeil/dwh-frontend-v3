@@ -45,6 +45,13 @@ def pruefauftrag_text(verlauf, frage, antwort):
     return "\n\n---\n\n".join(teile)
 
 
+def mit_korrektur(korrektur, frage):
+    """Text der nächsten Frage an den Analysten, nachdem eine Prüfrunde seine vorige Antwort korrigiert hat. Der
+    Nutzer sah die korrigierte Fassung, die Nachfrage soll darauf aufbauen (Oberfläche und Testtreiber)."""
+    return ("Hinweis der Anwendung: Eine Prüfrunde hat deine vorige Antwort korrigiert. Der Nutzer hat diese "
+            f"Fassung gesehen, beziehe dich auf sie:\n\n{korrektur}\n\n---\n\nNeue Frage des Nutzers:\n\n{frage}")
+
+
 def auswerten(text):
     """(urteil, endgültige Antwort oder None, Begründung). Unlesbares Ergebnis gilt als bestätigt: die Prüfung
     darf eine Antwort nie verschlechtern, nur weil sie selbst scheitert."""

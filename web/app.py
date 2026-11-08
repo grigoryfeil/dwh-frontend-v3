@@ -417,9 +417,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             return ("Hinweis der Anwendung: Dieses Gespräch wurde nach einer Pause neu gestartet. Bisheriger Verlauf, "
                     f"wie der Nutzer ihn sieht:\n\n{verlauf}\n\n---\n\nNeue Frage des Nutzers:\n\n{frage}")
         if eintrag.korrektur:
-            return ("Hinweis der Anwendung: Eine Prüfrunde hat deine vorige Antwort korrigiert. Der Nutzer hat diese "
-                    f"Fassung gesehen, beziehe dich auf sie:\n\n{eintrag.korrektur}\n\n---\n\n"
-                    f"Neue Frage des Nutzers:\n\n{frage}")
+            return pruefung.mit_korrektur(eintrag.korrektur, frage)
         return frage
 
     def beantworte(eintrag, runde):

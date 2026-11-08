@@ -1,6 +1,7 @@
 """Führt Gespräche aus einer Fragendatei durch den Harness und legt die vollständigen Ausgaben ab.
 
-Aufruf auf dem VPS als root: `python3 -I lauf.py fragen.json [--parallel 3]`. Ergebnis unter
+Aufruf auf dem VPS als root: `python3 -I lauf.py fragen.json [--parallel 3] [--pruefen]`. Mit `--pruefen` läuft
+jede Antwort durch die Prüfrunde wie mit dem Schalter Verify (Feld `pruefung` je Runde). Ergebnis unter
 `/var/lib/dwh-frontend-v3/laeufe/<zeitstempel>/`: `ergebnis.json` (alles) und `bericht.md` (zum Lesen).
 """
 
@@ -16,6 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kontext  # noqa: E402
+import pruefung  # noqa: E402
 from sitzung import Gespraech, Sitzungsfehler  # noqa: E402
 
 APP = Path("/opt/dwh-frontend-v3/app")
@@ -69,11 +71,26 @@ def _schritt(item):
     return None
 
 
-def gespraech_fuehren(nummer, fragen, anweisung, lauf):
+def pruefrunde(arbeit, anweisung, runden, frage, text):
+    """Prüfrunde wie in der Oberfläche (web/app.py, pruefe), in `arbeit/pruefung`. Liefert das Feld `pruefung`."""
+    ort = arbeit / "pruefung"
+    ort.mkdir(exist_ok=True)
+    shutil.chown(ort, "dwhv3", "dwhv3")
+    verlauf = [(r["frage"], r["antwort"]) for r in runden if r.get("antwort")]
+    try:
+        e = pruefung.pruefen(ort, anweisung, verlauf, frage, text)
+        r = e.pop("runde")
+        return {**e, "sekunden": r.sekunden, "token": r.token, "schritte": [s for s in map(schritt, r.items) if s]}
+    except Sitzungsfehler as fehler:
+        return {"urteil": "gescheitert", "antwort": None, "grund": str(fehler)[:300]}
+
+
+def gespraech_fuehren(nummer, fragen, anweisung, lauf, pruefen=False):
     arbeit = DATEN / "gespraeche" / f"{lauf}-{nummer:02d}"
     arbeit.mkdir(parents=True)
     shutil.chown(arbeit, "dwhv3", "dwhv3")
     ergebnis = {"nummer": nummer, "runden": []}
+    korrektur = None
     try:
         with Gespraech(arbeit, anweisung) as g:
             ergebnis["codex"] = g.codex_version
@@ -85,15 +102,24 @@ def gespraech_fuehren(nummer, fragen, anweisung, lauf):
                         continue
                     frage = frage["falls_rueckfrage"]
                 try:
-                    r = g.frage(frage)
+                    r = g.frage(pruefung.mit_korrektur(korrektur, frage) if korrektur else frage)
+                    korrektur = None
                 except Sitzungsfehler as fehler:
                     ergebnis["runden"].append({"frage": frage, "fehler": str(fehler)})
                     break
-                ergebnis["runden"].append({
+                runde = {
                     "frage": frage, "antwort": r.text, "sekunden": r.sekunden, "token": r.token,
                     "modellanfragen": r.modellanfragen,
                     "schritte": [s for s in map(schritt, r.items) if s],
-                })
+                }
+                # --pruefen: wie der Schalter Verify, die korrigierte Fassung ersetzt die Antwort und geht weiter
+                if pruefen and not r.text.lstrip().startswith("[Rückfrage]"):
+                    p = pruefrunde(arbeit, anweisung, ergebnis["runden"], frage, r.text)
+                    runde["pruefung"] = p
+                    if p["urteil"] == "korrigiert" and p.get("antwort"):
+                        runde["antwort_vor_pruefung"], runde["antwort"] = r.text, p["antwort"]
+                        korrektur = p["antwort"]
+                ergebnis["runden"].append(runde)
                 print(f"[{nummer}] {r.sekunden:>6}s  {frage[:70]}", flush=True)
     except Sitzungsfehler as fehler:
         ergebnis["fehler"] = str(fehler)
@@ -132,6 +158,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("fragen")
     parser.add_argument("--parallel", type=int, default=3)
+    parser.add_argument("--pruefen", action="store_true", help="jede Antwort durch die Prüfrunde (Schalter Verify)")
     args = parser.parse_args()
     gespraeche = json.loads(Path(args.fragen).read_text(encoding="utf-8"))
     stand, schema = datenstand()
@@ -140,11 +167,12 @@ def main():
     ablage = DATEN / "laeufe" / lauf
     ablage.mkdir(parents=True)
     with ThreadPoolExecutor(args.parallel) as pool:
-        ergebnisse = list(pool.map(lambda nf: gespraech_fuehren(nf[0], nf[1], anweisung, lauf),
+        ergebnisse = list(pool.map(lambda nf: gespraech_fuehren(nf[0], nf[1], anweisung, lauf, args.pruefen),
                                    enumerate(gespraeche, 1)))
     version = (APP / "VERSION").read_text().strip() if (APP / "VERSION").exists() else "?"
     (ablage / "ergebnis.json").write_text(json.dumps(
-        {"lauf": lauf, "version": version, "schema": schema, "anweisung": anweisung, "gespraeche": ergebnisse},
+        {"lauf": lauf, "version": version, "schema": schema, "pruefen": args.pruefen, "anweisung": anweisung,
+         "gespraeche": ergebnisse},
         ensure_ascii=False, indent=1), encoding="utf-8")
     (ablage / "bericht.md").write_text(bericht(lauf, stand, ergebnisse), encoding="utf-8")
     print(ablage)
