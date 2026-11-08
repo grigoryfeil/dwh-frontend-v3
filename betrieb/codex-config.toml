@@ -114,6 +114,8 @@ description = "DWH Frontend V3: Shell ohne Zugangsdaten, Datenbank, Netz und fre
 # Andere Gespräche: gesperrt, das eigene Arbeitsverzeichnis darunter bleibt beschreibbar (workspace_roots).
 # Geprüft mit `codex sandbox` am 08.11.2026: ohne diese Zeile waren fremde Gesprächsdateien lesbar.
 "/var/lib/dwh-frontend-v3/gespraeche" = "deny"
+# Gesicherte Dateien je Runde (web/dateien.py): das Modell darf ältere Antworten nicht nachträglich ändern.
+"/var/lib/dwh-frontend-v3/runden" = "deny"
 "/etc/dwh-frontend-v3" = "deny"
 "/etc/dwh-frontend-v2-codex" = "deny"
 "/run/dwh-frontend-db" = "deny"

@@ -4,13 +4,9 @@
 set -euo pipefail
 quelle="${1:?Repo-Stand fehlt}"
 
-# Wartungsfenster: Einspielen tauscht Dateien unter laufenden Prozessen und startet die Web-Unit neu, laufende
-# Gespräche gingen verloren. Deshalb nur, wenn kein Modellprozess läuft (oder ausdrücklich mit ERZWINGEN=1).
-laufend=$(pgrep -u dwhv3 -fc "app-server" || true)
-if [[ ${laufend:-0} -gt 0 && ${ERZWINGEN:-0} != 1 ]]; then
-  echo "einrichtung: $laufend Modellprozess(e) offen, abgebrochen. Auch ruhende Gespräche verlören ihren Verlauf. Später erneut oder mit ERZWINGEN=1." >&2
-  exit 1
-fi
+# Wartungsfenster (betrieb/wartung.sh): nicht, solange Gespräche laufen oder ruhen
+source "$quelle/betrieb/wartung.sh"
+wartung_pruefen
 V2=/opt/dwh-frontend-v2
 APP=/opt/dwh-frontend-v3/app
 H=/var/lib/dwh-frontend-v3/codex-home
@@ -21,7 +17,7 @@ systemctl disable --now dwh-frontend-v2-web.service dwh-frontend-v2-codex.socket
 
 id dwhv3 &>/dev/null || useradd --system --home-dir /var/lib/dwh-frontend-v3 --shell /usr/sbin/nologin --user-group dwhv3
 install -d -m 0755 -o root -g root /opt/dwh-frontend-v3 /opt/dwh-frontend-v3/codex
-install -d -m 0750 -o dwhv3 -g dwhv3 /var/lib/dwh-frontend-v3 "$H" /var/lib/dwh-frontend-v3/gespraeche
+install -d -m 0750 -o dwhv3 -g dwhv3 /var/lib/dwh-frontend-v3 "$H" /var/lib/dwh-frontend-v3/gespraeche /var/lib/dwh-frontend-v3/runden
 install -d -m 0700 -o root -g root /var/lib/dwh-frontend-v3/laeufe
 install -d -m 0750 -o root -g dwhv3 /etc/dwh-frontend-v3
 

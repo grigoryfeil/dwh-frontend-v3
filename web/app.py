@@ -49,6 +49,7 @@ STATISCH = HIER / "statisch"  # Build von oberflaeche/ (npm run build), eingeche
 ASSET = re.compile(r"[\w-]+\.(js|css|woff2|svg)")
 ASSET_ARTEN = {"js": "text/javascript", "css": "text/css", "woff2": "font/woff2", "svg": "image/svg+xml"}
 KENNUNG = re.compile(r"[0-9a-f]{32}")
+VERLAUF_RUNDEN, VERLAUF_ZEICHEN = 6, 4000  # Verlaufsvorspann nach einer Pause (an_das_modell)
 COOKIE = "__Host-dwhv3"
 SEITEN_KOEPFE = {
     "Content-Security-Policy": ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
@@ -69,6 +70,7 @@ class Einstellungen:
     sicher: bool = True  # Cookie nur über HTTPS, lokal zum Testen aus
     zeitlimit: int = 600  # Sekunden je Runde
     max_gespraeche: int = 4  # gleichzeitig offene Modellprozesse
+    max_behalten: int = 24  # behaltene Gespräche insgesamt (laufend und ruhend), darüber endet das älteste ruhende
     leerlauf: int = 1800  # Sekunden ohne Frage, danach ruht ein Gespräch (Prozess frei, Verlauf bleibt)
     abbruch_frist: float = 30  # endet eine abgebrochene Runde so lange nicht, wird das Gespräch geschlossen
     session_leerlauf: int = 4 * 3600  # Beta: Pausen zwischen Fragen sind länger als eine Stunde
@@ -142,6 +144,7 @@ class Eintrag:
         self.gespraech = None  # wird im Hintergrund gestartet, das dauert einige Sekunden
         self.pruefer = None  # Prüfgespräch der laufenden Runde, nur während der Prüfrunde
         self.korrektur = None  # von der Prüfrunde korrigierte Antwort, die das Modell noch nicht kennt
+        self.runden_ort = None  # gesicherte Dateien je Runde, außerhalb des Arbeitsverzeichnisses (web/dateien.py)
         self.runden = []
         self.laeuft = False
         self.beendet = False  # geschlossen (Session-Ende, Löschen), danach keine Fragen mehr
@@ -163,6 +166,8 @@ class Eintrag:
                 except Exception:  # noqa: BLE001, auch ein halb gestarteter Prozess wird geschlossen
                     pass
             shutil.rmtree(self.cwd, ignore_errors=True)
+            if self.runden_ort:
+                shutil.rmtree(self.runden_ort, ignore_errors=True)
 
 
 def json_body(request_body, felder):
@@ -197,7 +202,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             pruefsumme = ablage.anweisung(anweisung)
         except OSError as fehl:
             ablage_modul.melde(fehl)
-    for alt in e.gespraeche.glob("web-*"):  # Gespräche überleben keinen Neustart
+    runden_basis = e.gespraeche.parent / "runden"  # für die Modell-Shell gesperrt (codex-config.toml)
+    for alt in list(e.gespraeche.glob("web-*")) + list(runden_basis.glob("*")):  # Gespräche überleben keinen Neustart
         shutil.rmtree(alt, ignore_errors=True)
     kontendatei = konten.Konten(e.konten)
     drossel = Drossel()
@@ -368,17 +374,15 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         verlauf = [(r["frage"], r.get("antwort") or "") for r in eintrag.runden[:-1] if r.get("antwort")]
         cwd = eintrag.cwd / "pruefung"
         try:
-            cwd.mkdir(exist_ok=True)
+            # Frisch anlegen: Das Modell hätte hier einen Symlink hinterlassen können
+            if cwd.is_symlink() or cwd.is_file():
+                cwd.unlink()
+            elif cwd.exists():
+                shutil.rmtree(cwd)
+            cwd.mkdir()
             # Die Sandbox sperrt das Gesprächsverzeichnis für den Prüfer: genannte Dateien bekommt er als Kopie
             _, genannt = dateien.uebersetze(text, eintrag.cwd, eintrag.kennung)
-            kopiert = []
-            for d in genannt:
-                quelle = dateien.oeffne(eintrag.cwd, d["name"])
-                if quelle is not None:
-                    (cwd / d["name"]).parent.mkdir(parents=True, exist_ok=True)
-                    with quelle, open(cwd / d["name"], "wb") as f:
-                        shutil.copyfileobj(quelle, f)
-                    kopiert.append(d["name"])
+            kopiert = sorted(dateien.sichere(eintrag.cwd, cwd, [d["name"] for d in genannt]))
             p = pruefer_fabrik(cwd)
             with sperre:
                 eintrag.pruefer = p
@@ -401,6 +405,9 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             urteil, neu, grund = "gescheitert", None, str(fehl)[:200]
         ms = int((time.monotonic() - start) * 1000)
         if urteil == "korrigiert" and neu:
+            # Korrigierte Dateien des Prüfers übernehmen, damit seine Verweise auf seine Fassung zeigen
+            _, korrigiert = dateien.uebersetze(neu, cwd, eintrag.kennung)
+            dateien.sichere(cwd, eintrag.cwd, [d["name"] for d in korrigiert])
             return neu, {"status": "korrigiert", "hinweis": None, "ms": ms, "grund": grund}
         if urteil == "bestätigt":
             return text, {"status": "bestaetigt", "hinweis": None, "ms": ms, "grund": grund}
@@ -413,9 +420,14 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         frage = runde["frage"]
         frueher = [(r["frage"], r["antwort"]) for r in eintrag.runden[:-1] if r.get("antwort")]
         if eintrag.gespraech is None and frueher:
-            verlauf = "\n\n".join(f"Nutzer: {f}\n\nAnalyst: {a}" for f, a in frueher)
+            # Begrenzt: die jüngsten Runden, lange Antworten gekürzt, sonst wüchse die Eingabe mit jeder Runde
+            neueste = frueher[-VERLAUF_RUNDEN:]
+            verlauf = "\n\n".join(f"Nutzer: {f}\n\nAnalyst: {a if len(a) <= VERLAUF_ZEICHEN else a[:VERLAUF_ZEICHEN] + ' …'}"
+                                  for f, a in neueste)
+            ausgelassen = (f" (die {len(frueher) - len(neueste)} älteren Runden ausgelassen)"
+                           if len(frueher) > len(neueste) else "")
             return ("Hinweis der Anwendung: Dieses Gespräch wurde nach einer Pause neu gestartet. Bisheriger Verlauf, "
-                    f"wie der Nutzer ihn sieht:\n\n{verlauf}\n\n---\n\nNeue Frage des Nutzers:\n\n{frage}")
+                    f"wie der Nutzer ihn sieht{ausgelassen}:\n\n{verlauf}\n\n---\n\nNeue Frage des Nutzers:\n\n{frage}")
         if eintrag.korrektur:
             return pruefung.mit_korrektur(eintrag.korrektur, frage)
         return frage
@@ -443,7 +455,6 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             archiviere(eintrag, nummer, runde, "abgebrochen", items, vorher, ergebnis)
 
         text_modell = an_das_modell(eintrag, runde)
-        eintrag.korrektur = None
         try:
             if eintrag.gespraech is None:
                 g = gespraech_fabrik(eintrag.cwd)
@@ -453,23 +464,24 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 raise Sitzungsfehler("Runde abgebrochen")
             g = eintrag.gespraech
             ergebnis = g.frage(text_modell, beobachter=lambda n: beobachte(n, g))
+            eintrag.korrektur = None  # erst jetzt kennt das Modell die Korrektur, ein früherer Abbruch behält sie
         except Exception as fehl:  # noqa: BLE001, jede Ausnahme beendet die Runde
             if eintrag.abbruch and isinstance(fehl, Sitzungsfehler) and eintrag.gespraech is not None \
                     and eintrag.gespraech.thread_id:
                 return abgebrochen()
             meldung = str(fehl) if isinstance(fehl, Sitzungsfehler) else "interner Fehler"
             protokolliere(eintrag, nummer, "fehler", fehler=meldung)
+            # Der Zustand des Modellprozesses ist unklar: nur ihn beenden. Das Gespräch bleibt, die nächste Frage
+            # startet einen neuen Prozess mit dem sichtbaren Verlauf (an_das_modell). Den Prozess unter derselben
+            # Sperre lösen, die die Runde freigibt, sonst träfe das Beenden eine schon angenommene Folgefrage.
             with sperre:
                 if eintrag.abbruch:
                     runde["abgebrochen"] = True
                 else:
                     runde["fehler"] = meldung
+                prozess = loese_prozess(eintrag)
                 eintrag.laeuft, eintrag.fortschritt = False, None
             archiviere(eintrag, nummer, runde, "abgebrochen" if eintrag.abbruch else "fehler", items, vorher)
-            # Der Zustand des Modellprozesses ist unklar: nur ihn beenden. Das Gespräch bleibt, die nächste Frage
-            # startet einen neuen Prozess mit dem sichtbaren Verlauf (an_das_modell).
-            with sperre:
-                prozess = loese_prozess(eintrag)
             beende_prozess(prozess)
             return
         if eintrag.abbruch:  # wer abbricht, will die Antwort nicht mehr, auch wenn sie schon stand
@@ -483,7 +495,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 eintrag.korrektur = text
         protokolliere(eintrag, nummer, "fertig", ergebnis)
         antwort, gemeldet = dateien.uebersetze(text, eintrag.cwd, eintrag.kennung, nummer)
-        dateien.sichere(eintrag.cwd, nummer, [d["name"] for d in gemeldet])
+        dateien.sichere(eintrag.cwd, eintrag.runden_ort / str(nummer), [d["name"] for d in gemeldet])
         with sperre:
             if ergebnis_pruefung:
                 runde["pruefung"] = ergebnis_pruefung
@@ -568,6 +580,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             return fehler(422, "Ungültige Frage")
         runde = {"frage": text, "verifizieren": bool(daten.get("verifizieren")), "zeit": jetzt_iso(),
                  "abfragen": [], "beleg": [], "dateien": []}
+        zu_alt = []  # über `max_behalten` hinaus behaltene ruhende Gespräche, außerhalb der Sperre zu schließen
         with sperre:
             if kennung is None:
                 for g in [g for g in gespraeche.values() if not g.laeuft and g.beendet]:
@@ -579,7 +592,13 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 cwd = e.gespraeche / f"web-{kennung}"
                 cwd.mkdir(mode=0o750)
                 eintrag = Eintrag(kennung, cwd, s.ref, s.email)
+                eintrag.runden_ort = runden_basis / kennung
                 gespraeche[kennung] = eintrag
+                ruhig = sorted((g for g in gespraeche.values() if not g.laeuft and g is not eintrag),
+                               key=lambda g: g.zuletzt)
+                zu_alt = ruhig[:max(0, len(gespraeche) - e.max_behalten)]
+                for g in zu_alt:
+                    del gespraeche[g.kennung]
             else:
                 eintrag = gespraeche.get(kennung)
                 if eintrag is None or eintrag.besitzer != s.ref:
@@ -597,6 +616,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             eintrag.abbruch = None
             eintrag.zuletzt = time.monotonic()
         beende_prozess(frei or None)
+        for g in zu_alt:
+            g.schliessen()
         threading.Thread(target=beantworte, args=(eintrag, runde), daemon=True).start()
         return JSONResponse({"gespraech": kennung}, status_code=202)
 
@@ -634,12 +655,16 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         s = hole_session(request)
         if s is None:
             return nicht_angemeldet()
-        nummer, name, pfad = dateien.aufloesen(request.path_params["name"])
+        nummer, name = dateien.aufloesen(request.path_params["name"])
         with sperre:
             eintrag = eigenes(request, s)
             gemeldet = eintrag is not None and any(d["name"] == name for i, r in enumerate(eintrag.runden, 1)
                                                    if nummer in (None, i) for d in r.get("dateien") or [])
-        datei_ = dateien.oeffne(eintrag.cwd, pfad) if gemeldet else None
+        datei_ = None
+        if gemeldet and nummer and eintrag.runden_ort:
+            datei_ = dateien.oeffne(eintrag.runden_ort, f"{nummer}/{name}")
+        if gemeldet and datei_ is None:  # ohne Sicherung der aktuelle Stand
+            datei_ = dateien.oeffne(eintrag.cwd, name)
         if datei_ is None:
             return fehler(404, "Datei unbekannt")
         with datei_:

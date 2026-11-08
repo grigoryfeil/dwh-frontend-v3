@@ -5,6 +5,8 @@
 # Aufruf: betrieb/web-einrichtung.sh <Pfad zum entpackten Repo-Stand auf dem VPS>
 set -euo pipefail
 quelle="${1:?Repo-Stand fehlt}"
+source "$quelle/betrieb/wartung.sh"
+wartung_pruefen  # schon geprüft, wenn von einrichtung.sh aufgerufen
 APP=/opt/dwh-frontend-v3/app
 domain=dwhv3.152-53-125-222.sslip.io
 konten=/etc/dwh-frontend-v3/konten.json

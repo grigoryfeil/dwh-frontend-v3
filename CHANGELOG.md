@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.3 (09.11.2026)
+
+Zweite Prüfung durch Codex Astra (`handover/2026-11-09-zweitmeinung-haertung-review-ergebnis.md`): Befunde zu den Änderungen aus 0.6.0 behoben.
+
+- Prüfrunde: Eine offene Korrektur bleibt bis zur erfolgreichen Übergabe an das Modell erhalten, auch wenn eine Nachfrage abgebrochen wird. Korrigierte Dateien des Prüfers werden übernommen, die Antwort zeigt seine Fassung. Der Prüfer bekommt ein frisch angelegtes Verzeichnis.
+- Fehlerpfad: Der Modellprozess wird unter derselben Sperre gelöst, die die Runde freigibt. Eine schon angenommene Folgefrage verliert ihren Prozess nicht mehr.
+- Dateien: Rundenstände liegen außerhalb des Arbeitsverzeichnisses (`/var/lib/dwh-frontend-v3/runden`, für die Modell-Shell gesperrt). Alle Kopien laufen über `schreibe_sicher` (keinem Symlink folgen, keine Sonderdateien, exklusiv anlegen), größer als 50 MB wird nicht gesichert. Fehlt eine Sicherung, gilt der aktuelle Stand.
+- Grenzen: höchstens 24 behaltene Gespräche, darüber endet das älteste ruhende. Der Verlaufsvorspann nach einer Pause nimmt die jüngsten 6 Runden, Antworten auf 4.000 Zeichen gekürzt.
+- Oberfläche: Ist ein Gespräch wirklich beendet (etwa nach einem Neustart), erscheint „This conversation has ended“ statt einer still neu gestellten Frage ohne Verlauf.
+- Einspielen: gemeinsame Sperre in `betrieb/wartung.sh` für beide Einspielwege, zählt auch ruhende Gespräche.
+- Regressionstests: 9 (die 4 neuen scheitern an 0.6.2).
+
 ## 0.6.2 (08.11.2026)
 
 - Testtreiber: `--pruefen` fährt jede Antwort durch die Prüfrunde wie der Schalter Verify, mit Weitergabe der Korrektur an die nächste Frage. Der Text dieser Weitergabe kommt für Oberfläche und Testtreiber aus `pruefung.mit_korrektur`.

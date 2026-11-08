@@ -15,7 +15,7 @@ export type Zug = {
   gespraech?: string;
   runde?: Runde; // Stand vom Server, während der Arbeit mit Stufen und Schritten
   fertig?: Date;
-  fehler?: "verbindung" | "zeit" | "belegt";
+  fehler?: "verbindung" | "zeit" | "belegt" | "verloren";
   abbrechen?: boolean;
 };
 export type Overlay = { url: string; titel: string; nr: number; zeit?: Date };
@@ -572,7 +572,9 @@ export function Unterbrochen(props: { zug: Zug; zeitlimit: number; onNochmal: ()
       ? ["This took too long", `The analyst stopped after ${minuten} minutes without a result. A narrower question usually works: a shorter period, or fewer campuses.`, "Ask again"]
       : art === "belegt"
         ? ["All analysts are busy", "Data Desk is answering as many questions as it can right now. Your question is kept, please try again in a few minutes.", "Try again"]
-        : ["Connection lost", "The connection dropped while the analyst was working. Your question is kept, nothing else was lost.", "Try again"];
+        : art === "verloren"
+          ? ["This conversation has ended", "The analyst no longer has the earlier answers, for example after a restart. Ask again as a new question and say what it refers to.", "Ask as new question"]
+          : ["Connection lost", "The connection dropped while the analyst was working. Your question is kept, nothing else was lost.", "Try again"];
   return (
     <section className="abschnitt zug">
       <div className="rand">

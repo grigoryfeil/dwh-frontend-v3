@@ -4,9 +4,10 @@ Das Modell verweist mit absolutem Pfad (`/var/lib/dwh-frontend-v3/gespraeche/web
 (`bild.png`) darauf. Solche Verweise werden in den Vertrag der Oberfläche übersetzt
 (`/api/gespraeche/<id>/dateien/<name>`) und als `dateien` der Runde gemeldet. Nur gemeldete Dateien werden
 ausgeliefert, nur reguläre Dateien innerhalb des Verzeichnisses, ohne Symlinks: Bilder, Tabellen und Dashboards.
-Andere Pfade bleiben Text. Am Ende jeder Runde werden ihre Dateien nach `.runden/<nummer>/` kopiert und unter
-`/api/gespraeche/<id>/dateien/r<nummer>/<name>` ausgeliefert: Überschreibt eine spätere Runde dieselbe Datei, zeigt
-eine ältere Antwort weiter ihren eigenen Stand.
+Andere Pfade bleiben Text. Am Ende jeder Runde werden ihre Dateien nach `<runden>/<id>/<nummer>/` kopiert, außerhalb
+des Arbeitsverzeichnisses und für die Modell-Shell gesperrt, und unter `/api/gespraeche/<id>/dateien/r<nummer>/<name>`
+ausgeliefert: Eine spätere Runde ändert ältere Antworten nicht. Fehlt eine Sicherung, gilt der aktuelle Stand.
+Geschrieben wird nur über `schreibe_sicher`: Das Modell kann im Arbeitsverzeichnis Symlinks oder FIFOs anlegen.
 
 Dashboards (Data App des Data-Plugins) sind eigenständiges HTML mit Skript und eingebetteten Daten. Sie laufen nur im
 Rahmen der eigenen Seite (`Sec-Fetch-Dest: iframe`, `frame-ancestors 'self'`) in einer Sandbox mit fremdem Ursprung,
@@ -18,7 +19,6 @@ import os
 import re
 import shutil
 import stat
-from pathlib import Path
 from urllib.parse import quote, unquote
 
 ARTEN = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "webp": "image/webp",
@@ -88,27 +88,59 @@ def gueltig(cwd, name):
     return True
 
 
-def sichere(cwd, nummer, namen):
-    """Kopiert die gemeldeten Dateien der Runde `nummer` nach `.runden/<nummer>/` (Stand dieser Antwort)."""
+GROESSE_MAX = 50_000_000  # wie die Auslieferung, größere Dateien werden nicht kopiert
+
+
+def schreibe_sicher(basis, name, quelle):
+    """Schreibt die offene Datei `quelle` nach basis/name, ohne einem Symlink zu folgen: Verzeichnisse Teil für Teil mit
+    O_NOFOLLOW (fehlende werden angelegt), ein vorhandenes Ziel wird entfernt und exklusiv neu angelegt. True bei Erfolg.
+    """
+    os.makedirs(basis, exist_ok=True)
+    try:
+        fd = os.open(basis, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    except OSError:
+        return False
+    try:
+        teile = name.split("/")
+        for teil in teile[:-1]:
+            try:
+                os.mkdir(teil, 0o750, dir_fd=fd)
+            except FileExistsError:
+                pass
+            neu = os.open(teil, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            os.close(fd)
+            fd = neu
+        try:
+            os.unlink(teile[-1], dir_fd=fd)  # entfernt auch einen Symlink selbst, nie sein Ziel
+        except FileNotFoundError:
+            pass
+        ziel = os.open(teile[-1], os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o640, dir_fd=fd)
+        with os.fdopen(ziel, "wb") as f:
+            shutil.copyfileobj(quelle, f)
+        return True
+    except OSError:
+        return False
+    finally:
+        os.close(fd)
+
+
+def sichere(cwd, ziel, namen):
+    """Kopiert die gemeldeten Dateien aus `cwd` nach `ziel` (Stand einer Runde). Liefert die gesicherten Namen."""
+    gesichert = set()
     for name in namen:
         quelle = oeffne(cwd, name)
         if quelle is None:
             continue
-        ziel = Path(cwd) / ".runden" / str(nummer) / name
-        try:
-            ziel.parent.mkdir(parents=True, exist_ok=True)
-            with quelle, open(ziel, "wb") as f:
-                shutil.copyfileobj(quelle, f)
-        except OSError:
-            continue
+        with quelle:
+            if os.fstat(quelle.fileno()).st_size <= GROESSE_MAX and schreibe_sicher(ziel, name, quelle):
+                gesichert.add(name)
+    return gesichert
 
 
 def aufloesen(name):
-    """URL-Name `r<nummer>/<name>` → (nummer, name, Pfad im Gesprächsverzeichnis), sonst (None, name, name)."""
+    """URL-Name `r<nummer>/<name>` → (nummer, name), sonst (None, name)."""
     treffer = re.fullmatch(r"r(\d{1,4})/(.+)", name)
-    if not treffer:
-        return None, name, name
-    return int(treffer.group(1)), treffer.group(2), f".runden/{int(treffer.group(1))}/{treffer.group(2)}"
+    return (int(treffer.group(1)), treffer.group(2)) if treffer else (None, name)
 
 
 def uebersetze(text, cwd, kennung, nummer=None):

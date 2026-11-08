@@ -196,7 +196,7 @@ export default function App() {
         // Gespräch unbekannt, etwa nach einem Neustart des Backends
         setBanner(false);
         gespraech.current = null;
-        return aendere(id, { fehler: "verbindung", fertig: new Date() });
+        return aendere(id, { fehler: "verloren", fertig: new Date() });
       }
       if (lauf.current !== meins) return;
       const runde = s.runden.at(-1);
@@ -222,10 +222,13 @@ export default function App() {
       try {
         antwort = await api.fragen(text, gespraech.current, optionen);
       } catch (e) {
-        // Gespräch inzwischen beendet: neu beginnen
-        if (!(e instanceof Antwortfehler && (e.status === 404 || e.status === 410) && gespraech.current)) throw e;
-        gespraech.current = null;
-        antwort = await api.fragen(text, null, optionen);
+        // Gespräch inzwischen beendet: nicht still neu beginnen, eine Nachfrage ohne Verlauf ergäbe eine falsche
+        // Antwort. Der Nutzer stellt sie bewusst als neue Frage (Unterbrochen, „Ask as new question“).
+        if (e instanceof Antwortfehler && (e.status === 404 || e.status === 410) && gespraech.current) {
+          gespraech.current = null;
+          return aendere(id, { fehler: "verloren", fertig: new Date() });
+        }
+        throw e;
       }
       gespraech.current = antwort.gespraech;
       aendere(id, { gespraech: antwort.gespraech });
