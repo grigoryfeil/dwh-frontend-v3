@@ -1,0 +1,86 @@
+[
+ [
+  "Brechen in Hamburg mehr Studierende ab als in München?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Haben wir zum Septemberintake 2026 mehr Neueinschreibungen als zum Septemberintake 2025?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Welcher Anteil unserer neuen Leads kommt über Social Media?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Wie läuft es gerade in Berlin?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Wie gut ist unsere Konversion?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Wie viele Bewerbungen hatten wir dieses Jahr?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Welcher Fachbereich läuft bei uns am besten?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "What share of students who started in 2020 eventually dropped out?",
+  {
+   "falls_rueckfrage": "Yes, as you recommend."
+  }
+ ],
+ [
+  "Welche Campus haben ihr Einschreibungsziel für den Septemberintake 2026 verfehlt, und um wie viel?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Brechen heute mehr Studierende im ersten Studienjahr ab als vor fünf Jahren?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Wie viele Neueinschreibungen hatten wir zum Septemberintake 2026 insgesamt?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  },
+  "Und wie verteilt sich das auf die Fachbereiche?",
+  "Welche davon sind gegenüber dem Vorjahr am stärksten gewachsen?"
+ ],
+ [
+  "Wie entwickeln sich unsere Leads?",
+  {
+   "falls_rueckfrage": "Nein, mich interessieren nur die Leads für den Märzintake 2027, je Campus, verglichen mit dem Vorjahr zum gleichen Zeitpunkt."
+  },
+  "Und über welche Kanäle kommen dabei die meisten?"
+ ],
+ [
+  "Wie viele Campus Tours hatten wir im Oktober 2026 je Campus?",
+  "Wie hoch war dabei die Tour-Quote?",
+  "Ganz andere Frage: Wie hat Hamburg in der Semesterumfrage abgeschnitten?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  },
+  "Und wie sieht es dort mit der Abschlussquote aus?"
+ ]
+]

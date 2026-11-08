@@ -1,0 +1,20 @@
+[
+ [
+  "Erstelle eine Grafik zum Verlauf der Konvertierungsrate von Opps zu Enrollments.",
+  "Nein, alle Intakes der letzten Jahre als Kurve."
+ ],
+ [
+  "Zeig mir als Diagramm, wie viele neue Leads wir je Monat in 2025 und 2026 hatten, beide Jahre übereinander.",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  }
+ ],
+ [
+  "Wie hat sich der Studierendenbestand an den deutschen Campus in den letzten drei Jahren entwickelt?",
+  {
+   "falls_rueckfrage": "Ja, so wie du es empfiehlst."
+  },
+  "Kannst du mir das als Liniendiagramm zeigen, je Campus eine Linie?",
+  "Nimm bitte nur die fünf größten Campus."
+ ]
+]

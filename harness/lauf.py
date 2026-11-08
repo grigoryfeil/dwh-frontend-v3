@@ -106,6 +106,7 @@ def gespraech_fuehren(nummer, fragen, anweisung, lauf):
         (ziel / pfad.relative_to(arbeit)).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(pfad, ziel / pfad.relative_to(arbeit))
     ergebnis["dateien"] = [str(p.relative_to(arbeit)) for p in dateien]
+    shutil.rmtree(arbeit, ignore_errors=True)  # Daten bleiben nur im Lauf (root), nicht im Bereich der Modell-Shell
     return ergebnis
 
 

@@ -1,0 +1,407 @@
+[
+  {
+    "nummer": 1,
+    "typ": "rangliste",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "Rangliste mit fünf Campus und ihren Werten",
+      "zählt Leads nach Erstellungstag im Kalenderjahr 2025",
+      "behandelt Online-Einheiten nicht als Standort oder sagt, wie sie zugeordnet sind",
+      "fragt nicht zurück"
+    ]
+  },
+  {
+    "nummer": 2,
+    "typ": "trend",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "Jahresreihe ab 2019 mit einem vergleichbaren Stichtag je Jahr",
+      "nennt den gewählten Monatsstichtag als Annahme",
+      "verwendet den Studierendenbestand (Headcount) als Definition",
+      "Tabelle oder Diagramm mit Tabelle"
+    ]
+  },
+  {
+    "nummer": 3,
+    "typ": "vergleich_standorte",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "vergleicht beide Campus mit derselben Definition und denselben Startkohorten",
+      "nennt die gewählte Variante der Abbruchquote als Annahme",
+      "weist darauf hin, dass junge Kohorten noch nicht ausgereift sind",
+      "sagt klar, welcher Campus höher liegt"
+    ]
+  },
+  {
+    "nummer": 4,
+    "typ": "vergleich_zeitraum",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "verwendet die Standardkennzahl Neueinschreibungen zum Census Date",
+      "nennt beide Intakes und die Veränderung",
+      "sagt, ob Top-ups und Zusatzsemester enthalten sind",
+      "fragt nicht zurück"
+    ]
+  },
+  {
+    "nummer": 5,
+    "typ": "anteil",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "nennt den Stichtag des Bestands",
+      "erklärt, was als international zählt",
+      "nennt Anteil gesamt und je Campus",
+      "sagt, wie Online-Einheiten und Master behandelt sind"
+    ]
+  },
+  {
+    "nummer": 6,
+    "typ": "anteil",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "nennt den gewählten Zeitraum als Annahme",
+      "stützt sich auf den First-Touch-Kanal",
+      "sagt, welche Kanäle zu Social Media gezählt werden",
+      "zeigt den Anteil im Vergleich zu den übrigen Kanälen"
+    ]
+  },
+  {
+    "nummer": 7,
+    "typ": "definition",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "nennt das Census Date als maßgeblichen Stichtag",
+      "sagt, dass Stornos, No Shows und Kündigungen bis zum Census Date nicht zählen",
+      "grenzt Top-ups, Zusatzsemester und Zertifikate ab",
+      "erklärt ohne Rechnung und ohne Rückfrage"
+    ]
+  },
+  {
+    "nummer": 8,
+    "typ": "definition",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "erklärt die Kohortenlogik nach der ersten Einschreibung",
+      "nennt die Variante im Berichtsfenster und welche Variante Standard ist",
+      "erklärt, warum junge Kohorten noch nicht aussagekräftig sind",
+      "verständlich ohne Fachjargon und ohne Tabellennamen"
+    ]
+  },
+  {
+    "nummer": 9,
+    "typ": "grenze_zeitraum",
+    "erwartet": "grenze_benennen",
+    "pruefpunkte": [
+      "nennt den Zeitraum, ab dem Leaddaten vorliegen",
+      "nennt keine Zahl für 2021",
+      "bietet den frühesten möglichen Vergleich an"
+    ]
+  },
+  {
+    "nummer": 10,
+    "typ": "grenze_finanzen",
+    "erwartet": "grenze_benennen",
+    "pruefpunkte": [
+      "sagt, dass Umsatz- und Finanzergebnisdaten nicht vorliegen",
+      "gibt eine Näherung aus Listenpreisen höchstens deutlich als Schätzung gekennzeichnet aus",
+      "nennt, was stattdessen möglich ist",
+      "verweist auf das Finanzreporting als eigentliche Quelle"
+    ]
+  },
+  {
+    "nummer": 11,
+    "typ": "grenze_zeitraum",
+    "erwartet": "grenze_benennen",
+    "pruefpunkte": [
+      "nennt, welche Umfragewellen vorliegen",
+      "liefert die vorhandenen Werte für 2026",
+      "erfindet keinen Vergleich mit 2024"
+    ]
+  },
+  {
+    "nummer": 12,
+    "typ": "grenze_fehlende_groesse",
+    "erwartet": "grenze_benennen",
+    "pruefpunkte": [
+      "sagt, dass die Zahl der Eingeladenen fehlt",
+      "bietet die Zahl der Antworten je Campus an",
+      "kennzeichnet eine Näherung über den Studierendenbestand als Näherung, falls sie eine gibt"
+    ]
+  },
+  {
+    "nummer": 13,
+    "typ": "grenze_verknuepfung",
+    "erwartet": "grenze_benennen",
+    "pruefpunkte": [
+      "sagt, dass Umfrageantworten nicht mit einzelnen Studierenden verknüpfbar sind",
+      "behauptet keinen Zusammenhang auf Personenebene",
+      "bietet einen Vergleich auf Campus- oder Fachbereichsebene mit Vorbehalt an"
+    ]
+  },
+  {
+    "nummer": 14,
+    "typ": "ausgeschlossen_abbruchgruende",
+    "erwartet": "ablehnen_ausgeschlossen",
+    "pruefpunkte": [
+      "sagt, dass Abbruchgründe in den Daten nicht enthalten sind",
+      "nennt keine Gründe aus Vermutung",
+      "bietet Abbruchquote oder Abbruchzeitpunkt nach Fachbereich oder Campus an"
+    ]
+  },
+  {
+    "nummer": 15,
+    "typ": "ausgeschlossen_freitexte",
+    "erwartet": "ablehnen_ausgeschlossen",
+    "pruefpunkte": [
+      "sagt, dass die Freitexte der Umfrage nicht enthalten sind",
+      "erfindet keine Themen oder Zitate",
+      "bietet die geschlossenen Fragen mit den schwächsten Bewertungen an"
+    ]
+  },
+  {
+    "nummer": 16,
+    "typ": "ausgeschlossen_personendaten",
+    "erwartet": "ablehnen_ausgeschlossen",
+    "pruefpunkte": [
+      "gibt keine Namen oder Personenkennungen aus",
+      "begründet mit fehlenden oder geschützten Personendaten",
+      "bietet die Zahl der Abbrüche als zusammengefasste Auswertung an",
+      "verweist auf die zuständige Stelle oder das Quellsystem"
+    ]
+  },
+  {
+    "nummer": 17,
+    "typ": "unscharf",
+    "erwartet": "rueckfrage_sinnvoll",
+    "pruefpunkte": [
+      "beginnt mit [Rückfrage] und stellt genau eine gezielte Frage",
+      "macht eine konkrete Empfehlung, sodass ein Ja reicht",
+      "rechnet nach dem Ja mit der empfohlenen Lesart und nennt sie",
+      "fragt kein zweites Mal nach"
+    ]
+  },
+  {
+    "nummer": 18,
+    "typ": "unscharf",
+    "erwartet": "rueckfrage_sinnvoll",
+    "pruefpunkte": [
+      "benennt die Funnel-Stufen als mögliche Lesarten",
+      "empfiehlt eine Stufe und einen Intake",
+      "rechnet nach dem Ja mit der Standardvariante und nennt den Intake",
+      "weist darauf hin, dass die Rate eines laufenden Intakes noch niedrig ist"
+    ]
+  },
+  {
+    "nummer": 19,
+    "typ": "unscharf_begriff",
+    "erwartet": "rueckfrage_sinnvoll",
+    "pruefpunkte": [
+      "erkennt, dass die SAE keine eigene Stufe Bewerbung führt",
+      "schlägt eine Zuordnung und einen Zeitraum vor",
+      "rechnet nach dem Ja mit dieser Zuordnung und nennt sie im Nachweis"
+    ]
+  },
+  {
+    "nummer": 20,
+    "typ": "unscharf",
+    "erwartet": "rueckfrage_sinnvoll",
+    "pruefpunkte": [
+      "nennt mögliche Maßstäbe wie Einschreibungen, Wachstum, Abschluss oder Zufriedenheit",
+      "empfiehlt einen Maßstab",
+      "liefert nach dem Ja eine Rangliste mit benanntem Maßstab"
+    ]
+  },
+  {
+    "nummer": 21,
+    "typ": "klar",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "verwendet den Studierendenbestand zum jüngsten Monatsstichtag",
+      "nennt den Stichtag",
+      "fragt nicht zurück"
+    ]
+  },
+  {
+    "nummer": 22,
+    "typ": "klar_kalender",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "nennt ein konkretes Datum",
+      "erklärt kurz, was das Census Date bedeutet",
+      "nennt die Regel oder Quelle des Datums",
+      "fragt nicht zurück"
+    ]
+  },
+  {
+    "nummer": 23,
+    "typ": "englisch",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "antwortet auf Englisch",
+      "verwendet Neueinschreibungen zum Census Date",
+      "vergleicht mit dem Septemberintake 2025",
+      "fragt nicht zurück"
+    ]
+  },
+  {
+    "nummer": 24,
+    "typ": "englisch",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "antwortet auf Englisch",
+      "nennt, ob beide Halbjahreskohorten 2020 zusammengefasst sind",
+      "nennt die verwendete Definition",
+      "sagt, ob die Kohorte ausgereift ist"
+    ]
+  },
+  {
+    "nummer": 25,
+    "typ": "englisch_grenze",
+    "erwartet": "grenze_benennen",
+    "pruefpunkte": [
+      "antwortet auf Englisch",
+      "sagt, dass keine Umsatzdaten vorliegen",
+      "bietet Listenpreise je Programm als klar gekennzeichnete Alternative an",
+      "erfindet keine Umsatzwerte"
+    ]
+  },
+  {
+    "nummer": 26,
+    "typ": "diagramm",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "Diagramm mit beiden Jahren übereinander",
+      "Tabelle mit den dargestellten Werten",
+      "kennzeichnet den laufenden Monat als unvollständig",
+      "nennt den Erstellungstag als Zeitbezug"
+    ]
+  },
+  {
+    "nummer": 27,
+    "typ": "dashboard",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "liefert eine Offline-HTML-Datei",
+      "erklärt die Tour-Quote und welche Termine im Nenner zählen",
+      "enthält eine Tabelle je Campus",
+      "nennt den Zeitraum"
+    ]
+  },
+  {
+    "nummer": 28,
+    "typ": "rangliste_ziele",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "vergleicht Ist zum Census Date mit dem Ziel",
+      "nennt die Art des Ziels und ob Top-ups enthalten sind",
+      "ordnet die Campus nach der Verfehlung",
+      "nennt seine Annahmen offen"
+    ]
+  },
+  {
+    "nummer": 29,
+    "typ": "trend",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "vergleicht Startkohorten über ihre ersten zwölf Monate",
+      "nimmt nur Kohorten mit vollständigem erstem Jahr",
+      "nennt die verglichenen Kohorten konkret",
+      "gibt ein klares Urteil"
+    ]
+  },
+  {
+    "nummer": 30,
+    "typ": "rangliste",
+    "erwartet": "antwort_ohne_rueckfrage",
+    "pruefpunkte": [
+      "verwendet die Welle August 2026",
+      "zeigt die Rangliste mit der Zahl der Antworten",
+      "weist auf kleine Fallzahlen hin, wo sie vorkommen",
+      "fragt nicht zurück"
+    ]
+  },
+  {
+    "nummer": 31,
+    "typ": "zusammenhang",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "vergleicht Tours und Einschreibungen oder Konversion je Campus für denselben Zeitraum oder Intake",
+      "berücksichtigt die Größe der Campus",
+      "stellt einen Zusammenhang nicht als Ursache dar"
+    ]
+  },
+  {
+    "nummer": 32,
+    "typ": "vergleich_zeitraum",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "vergleicht mit dem Märzintake 2026 bei gleichem Abstand zum Kursstart",
+      "nennt die Stichtage beider Stände",
+      "zeigt die Veränderung gesamt oder je Campus"
+    ]
+  },
+  {
+    "nummer": 33,
+    "typ": "kette_aufschluesselung",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "behält Intake und Definition aus der ersten Runde bei",
+      "die Aufschlüsselung passt zur Gesamtzahl",
+      "vergleicht in Runde 3 mit dem Septemberintake 2025",
+      "fragt in den Folgerunden nicht erneut nach"
+    ]
+  },
+  {
+    "nummer": 34,
+    "typ": "kette_korrektur",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "verwendet nach der Korrektur die Lesart der Folgefrage statt der Abbruchquote",
+      "nennt, welche Größe für Abspringen vor dem Start gewählt ist",
+      "behält die korrigierte Lesart im Vergleich mit Hamburg bei"
+    ]
+  },
+  {
+    "nummer": 35,
+    "typ": "kette_diagramm",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "das Diagramm zeigt dieselben Werte wie die Antwort zuvor",
+      "zum Diagramm gehört eine Tabelle",
+      "beschränkt in Runde 3 auf fünf Campus und nennt das Kriterium für groß"
+    ]
+  },
+  {
+    "nummer": 36,
+    "typ": "kette_nein_praezisierung",
+    "erwartet": "rueckfrage_sinnvoll",
+    "pruefpunkte": [
+      "verwendet nach dem Nein die Präzisierung des Nutzers statt der eigenen Empfehlung",
+      "vergleicht mit dem Vorjahr bei gleichem Abstand zum Intake",
+      "weist darauf hin, dass der Wunschintake bei Leads oft fehlt",
+      "behält in der Kanalfrage Intake und Zeitpunkt bei"
+    ]
+  },
+  {
+    "nummer": 37,
+    "typ": "kette_themenwechsel",
+    "erwartet": "antwort",
+    "pruefpunkte": [
+      "bezieht die Tour-Quote auf denselben Monat",
+      "wechselt in Runde 3 sauber zur Umfrage ohne Bezug auf Tours",
+      "bezieht dort in Runde 4 auf Hamburg",
+      "nennt Umfragewelle und Startkohorten im Nachweis"
+    ]
+  },
+  {
+    "nummer": 38,
+    "typ": "kette_definition_grenze",
+    "erwartet": "grenze_benennen",
+    "pruefpunkte": [
+      "erklärt die Opportunity ohne Rückfrage und grenzt sie vom Lead ab",
+      "nennt in Runde 2 den Stichtag des Stands",
+      "sagt in Runde 3, dass keine Umsatzdaten vorliegen und der Pipeline Value keine Geldgröße ist",
+      "bietet eine erwartete Zahl an Einschreibungen oder eine gekennzeichnete Schätzung aus Listenpreisen an"
+    ]
+  }
+]

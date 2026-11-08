@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.5 (08.11.2026)
+
+- Antwort: Wird ein Diagramm oder Dashboard als Datei geliefert, bleibt die Antwort ohne Datei lesbar (Kernaussage mit Zahl, Wertetabelle bzw. wichtigste Werte). Befund: Antworten mit Datei enthielten oft keine Tabelle, einmal keine Kernzahl.
+- Referenzvergleich: Dashboard-Kernwerte werden auch im gerenderten Standardzustand gesucht (Chromium als nobody ohne Netz). Werte, die einen Filter brauchen, sind unklar statt verfehlt.
+- Referenzlauf 0.4.4: zurückgehalten 13/13, Entwicklung 12/14 (1 verfehlt: Konversionskurve ohne Werte im Text).
+
+## 0.4.4 (08.11.2026)
+
+- Arbeitsweise: Rückfrage nur bei echter Mehrdeutigkeit. Gibt es einen SAE-Standard oder lassen sich die Lesarten nebeneinander zeigen, wird gerechnet und die andere Lesart im Nachweis genannt (Befund Breitentest: 8 von 33 unnötigen Rückfragen).
+
+## 0.4.3 (08.11.2026)
+
+- Sandbox: Gesprächsverzeichnis für die Modell-Shell gesperrt, nur das eigene Arbeitsverzeichnis bleibt zugänglich. Vorher waren Dateien anderer Gespräche lesbar (Befund Grenztest, geprüft mit `codex sandbox`).
+- Testtreiber entfernt sein Arbeitsverzeichnis nach dem Sichern der Dateien.
+
+## 0.4.2 (08.11.2026)
+
+- SAE-Wissen STA-016: Kürzel der Media University (MU-BER, MU-COL, MU-FFM, MU-ONL), MUC ist München. Behebt eine Abweichung im Stabilitätstest (Ausschluss über „MU%“ entfernte München).
+- Testmaterial: Stabilitätssatz, Grenzfragen, synthetischer Breitensatz, Betriebstest der Weboberfläche (`betrieb/web-last.py`).
+
 ## 0.4.1 (08.11.2026)
 
 - Dashboards: eigenständige, schlanke HTML-Datei nach den Anleitungen des Plugins statt der Data App, deren ChatGPT-Bedienelemente (Veröffentlichen, Ask ChatGPT) hier ohne Funktion sind.

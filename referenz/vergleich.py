@@ -21,15 +21,22 @@ Kein Modellrichter. Je Fall wird die Antwort der letzten gewerteten Runde geprü
                   Kernwert steht in den eingebetteten Daten (HTML oder mitgelieferte data.json): als Summe eines
                   Zahlenfelds über die Zeilen, die die Bedingungen einer Variante in `zeilen` erfüllen, bei
                   `einheit: "%"` auch als Quotient zweier Summen. Steht er nur als lose Zahl da, ist das unklar.
-                  `sekunden_max` gibt nur einen Hinweis zur Laufzeit. Das Rendering prüft der Mensch.
+                  Fehlen passende Zeilen, zählt ein Wert, der im gerenderten Standardzustand sichtbar ist (Chromium als
+                  nobody ohne Netz, nur auf dem VPS). Ein Wert mit Bedingungen, der dort nicht steht, ist unklar
+                  (Filter nötig). `sekunden_max` gibt nur einen Hinweis zur Laufzeit. Die Gestaltung prüft der Mensch.
 Ergebnis je Fall: bestanden, verfehlt oder unklar. Unklar heißt: deterministisch nicht entscheidbar, etwa weil das
 Gespräch mit einer Rückfrage endet, abgebrochen ist oder ein Wert nur ohne passenden Kontext vorkommt.
 """
 
 import argparse
+import html
 import json
+import os
 import re
+import shutil
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HIER = Path(__file__).resolve().parent
@@ -311,6 +318,30 @@ def dashboard_quellen(ordner, namen):
     return quellen
 
 
+def gerendert(pfad):
+    """Sichtbarer Text der Seite nach dem Ausführen ihrer Skripte (Standardzustand), oder None.
+
+    Schlanke Dashboards rechnen Kennzahlen erst im Browser. Chromium läuft dafür als Nutzer nobody, ohne Netz
+    (Proxy ins Leere), in einem Wegwerfverzeichnis. Nur auf dem VPS (root, runuser, chromium vorhanden)."""
+    chromium, runuser = shutil.which("chromium"), shutil.which("runuser")
+    if not chromium or not runuser or os.geteuid() != 0:
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        os.chmod(tmp, 0o777)
+        kopie = Path(tmp) / "seite.html"
+        shutil.copy(pfad, kopie)
+        os.chmod(kopie, 0o644)
+        try:
+            dom = subprocess.run(
+                [runuser, "-u", "nobody", "--", "env", f"HOME={tmp}", chromium, "--headless=new", "--no-sandbox",
+                 "--disable-gpu", "--proxy-server=127.0.0.1:9", "--virtual-time-budget=8000", f"--user-data-dir={tmp}/p",
+                 "--dump-dom", f"file://{kopie}"], capture_output=True, text=True, timeout=90).stdout
+        except (subprocess.TimeoutExpired, OSError):
+            return None
+    dom = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", dom)
+    return html.unescape(re.sub(r"<[^>]+>", " ", dom))
+
+
 def kernwert_kandidaten(zeilen, anteil):
     """(Wert, Beschreibung) aus den Zeilen: Summen je Zahlenfeld, bei Anteilen Quotienten, Mittel und Einzelwerte."""
     summen = {}
@@ -329,8 +360,9 @@ def kernwert_kandidaten(zeilen, anteil):
     return kandidaten
 
 
-def kernwert_finden(k, quellen):
-    """Sucht einen Kernwert in den Tabellen der Dashboard-Daten. Liefert (ok|unklar|verfehlt, Fundtext)."""
+def kernwert_finden(k, quellen, sicht=None):
+    """Sucht einen Kernwert in den Tabellen der Dashboard-Daten, dann im gerenderten Standardzustand (`sicht`:
+    Dateiname -> sichtbarer Text). Liefert (ok|unklar|verfehlt, Fundtext)."""
     varianten = k.get("zeilen") or [[]]
     anteil = k.get("einheit") == "%"
     naechste = None
@@ -347,11 +379,18 @@ def kernwert_finden(k, quellen):
                 if naechste is None and kandidaten and variante:
                     nah = ", ".join(f"{wie} = {wert:g}" for wert, wie in kandidaten[:3])
                     naechste = f"Zeilen zu {' / '.join(b[0] for b in variante)} in {datei}, {pfad}: {nah}"
+    for datei, text in (sicht or {}).items():
+        for wert, _, fund in zahlen(text or ""):
+            if passt(wert, k):
+                return "ok", f"im gerenderten Dashboard sichtbar: {fund} in {datei}"
     for datei, daten, rest in quellen:
         lose = list(blaetter(daten)) + [float(z) for z in re.findall(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])", rest)]
         for v in lose:
             if passt(v, k) or (anteil and abs(v) <= 1 and passt(v * 100, k)):
                 return "unklar", f"Wert {v:g} nur als einzelne Zahl ohne passende Zeilen in {datei}"
+    if any(sicht.values() if sicht else []) and any(k.get("zeilen") or [[]]):
+        # Wert mit Bedingungen (etwa ein Programm): im Standardzustand nicht zu sehen, braucht einen Filter
+        return "unklar", (naechste or "keine Zeilen in den Daten") + "; im Standardzustand nicht sichtbar, Filter nötig"
     return "verfehlt", naechste or "keine Zeilen zu den Bedingungen in den eingebetteten Daten"
 
 
@@ -368,9 +407,10 @@ def dashboard_pruefen(p, g, runde, basis):
     quellen = dashboard_quellen(ordner, html + [n for n in namen if Path(n).name == "data.json"])
     if not quellen:
         return "unklar", [f"Dateien des Gesprächs fehlen lokal unter {ordner}"], hinweise
+    sicht = {n: gerendert(ordner / n) for n in html if (ordner / n).is_file()}
     status, gruende = "ok", []
     for k in p["kernwerte"]:
-        ergebnis, fund = kernwert_finden(k, quellen)
+        ergebnis, fund = kernwert_finden(k, quellen, sicht)
         if ergebnis != "ok":
             gruende.append(f"{k.get('name', 'Kernwert')}: erwartet {erwartung_text(k)}; {fund}")
             status = "verfehlt" if ergebnis == "verfehlt" or status == "verfehlt" else "unklar"
