@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.6 (08.11.2026)
+
+- Antwort: SQL wird nie gezeigt, auch nicht auf ausdrücklichen Wunsch (Entscheidung Grigory). Stattdessen Beschreibung von Daten, Abgrenzungen und Rechenschritten in Worten.
+
 ## 0.4.5 (08.11.2026)
 
 - Antwort: Wird ein Diagramm oder Dashboard als Datei geliefert, bleibt die Antwort ohne Datei lesbar (Kernaussage mit Zahl, Wertetabelle bzw. wichtigste Werte). Befund: Antworten mit Datei enthielten oft keine Tabelle, einmal keine Kernzahl.
