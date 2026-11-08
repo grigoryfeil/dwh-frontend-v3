@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.4 (08.11.2026)
+
+- Katalog: SAE-Standardlesart je Kennzahlfamilie (Spalten standard, standard_quelle), 7 Familien belegt, 4 offen; Konversion: Bulletin-Lesart als Standard, Ersatzquelle vor 0326.
+- Themenansichten und Themenindex zeigen den SAE-Standard.
+
 ## 0.3.3 (08.11.2026)
 
 - Arbeitsweise: höchstens eine Rückfrage je Frage; nach Antwort oder Präzisierung mit der am besten passenden, durch die Daten gedeckten Lesart rechnen und sie benennen.

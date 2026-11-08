@@ -68,6 +68,8 @@ Gültigkeit bezieht sich auf die Zeit der Daten, nicht auf das Datum, an dem jem
 | `zeitbezug` | Stichtag (Bestand an einem Tag), Zeitraum (Fluss) oder Kohorte, mit dem maßgeblichen Datumsfeld. |
 | `quellen` | Objekte, aus denen die Kennzahl kommt, mit gemessener Abdeckung. Wechselt die maßgebliche Quelle über die Zeit, steht jede mit ihrem Zeitraum oder ihren Intakes da. |
 | `verwandt` | Varianten und abgegrenzte Nachbarkennzahlen mit dem Unterschied in Klammern. |
+| `standard` | Kennzeichnet in einer Familie von Varianten derselben Geschäftsgröße die Variante, die die SAE in ihren Berichten und Dashboards verwendet. `ja` = diese Zeile ist der Standard. Eine `kennzahl_id` = diese Zeile ist eine Variante, der Standard ist die genannte Kennzahl. Leer = keine Varianten oder kein belegter Standard, `standard_quelle` sagt, was zutrifft. |
+| `standard_quelle` | Familie und Quelle, aus der sich der Standard ergibt (Bericht, Dashboard, Kennzahlenkatalog, SAE-Wissen). Bei einer Familie ohne belegten Standard steht hier „Kein belegter Standard“ mit Grund. |
 
 ## Status
 
@@ -102,4 +104,5 @@ Gültigkeit bezieht sich auf die Zeit der Daten, nicht auf das Datum, an dem jem
 - **Neue Lieferung:** `datenstand` der geprüften Zeilen nachziehen. Neue Objekte und Spalten bekommen eine Zeile mit `status = neu`, auch ohne Definition. Fehlende bekommen `status = entfallen`, ihre Zeile bleibt stehen.
 - **Vollständigkeit:** Jedes Objekt und jede Spalte der Kopie hat eine Zeile, auch ohne bekannte Definition.
 - **Abdeckung nachmessen:** Mit jeder neuen Lieferung `abdeckung` und `quellen` gegen die Kopie neu messen und Messdatum und Bestand nachziehen. Eine Änderung der Abdeckung ist keine Änderung der Definition und braucht keine neue Zeile.
+- **Standard nur mit Quelle:** `standard` wird nur gesetzt, wenn ein Bericht, ein Dashboard, der Kennzahlenkatalog oder das SAE-Wissen die Variante als die berichtete belegt. Sonst bleibt die Spalte leer, und die Familie steht als offener Punkt in `review.md`. Endet die Abdeckung des Standards, nennt `quellen` die nächstliegende Quelle mit Unterschied.
 - **Varianten trennen:** Bedeutet derselbe Name in zwei Quellen Verschiedenes (andere Zähleinheit, Grundgesamtheit oder anderer Zeitbezug), bekommt jede Lesart eine eigene `kennzahl_id`, und beide nennen sich gegenseitig in `verwandt`.

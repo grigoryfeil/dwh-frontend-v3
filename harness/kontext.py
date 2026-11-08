@@ -58,7 +58,8 @@ def themenansichten(katalog, wissen):
             text.append("\n## Kennzahlen\n")
             for z in teil["kennzahlen"]:
                 text.append(f"\n### `{z['kennzahl_id']}` {z['name']}" + (" (offen)" if z["status"] == "offen" else "")
-                            + "\n" + _feld("Definition", z.get("definition")) + _feld("Berechnung", z.get("berechnung"))
+                            + "\n" + _feld("SAE-Standard", z.get("standard"))
+                            + _feld("Definition", z.get("definition")) + _feld("Berechnung", z.get("berechnung"))
                             + _feld("Zähleinheit", z.get("zaehleinheit"))
                             + _feld("Grundgesamtheit", z.get("grundgesamtheit"))
                             + _feld("Zeitbezug", z.get("zeitbezug")) + _feld("Quellen und Abdeckung", z.get("quellen"))
@@ -96,7 +97,9 @@ def themenindex(katalog, wissen, kontext):
     teile = []
     for thema, teil in sorted(themen.items()):
         teile.append(f"\n## {thema} (`{kontext}/{thema}.md`)\n")
-        teile.extend(f"- Kennzahl `{z['kennzahl_id']}` {z['name']}\n" for z in teil["kennzahlen"])
+        teile.extend(f"- Kennzahl `{z['kennzahl_id']}` {z['name']}"
+                     + (" (SAE-Standard)" if (z.get("standard") or "").strip().lower() == "ja" else "") + "\n"
+                     for z in teil["kennzahlen"])
         teile.extend(f"- `{z['objekt_id']}`: {_kurz(z['definition'])}\n" for z in teil["objekte"])
     return "".join(teile)
 

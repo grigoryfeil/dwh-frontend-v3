@@ -209,3 +209,47 @@ Basis: reife Kohorten ab 2018_H1, Personen über die Kohorten summiert. Zertifik
 
 **Offen.** Ob das Dashboard Zertifikate bewusst ausschließt oder sie nur nicht in seiner Programmauswahl führt, ist nicht geprüft. Die Filterliste des Dashboards wäre der Beleg.
 
+## Standardlesart der Konversion Opportunity zu Enrollment (08.11.2026)
+
+**Entscheidung.** Ohne andere Angabe gilt in Berichten und Verläufen `cr_opp_enrollment_bulletin`: Core-Einschreibungen geteilt durch alle Opportunities, Stand zum Census Date. Der Nutzer hat das auf Grundlage des SAE-Wissens entschieden, nach dem die Bulletin-Rate die Konversionsrate der Vertriebssteuerung ist (FUN-001, FUN-046, FUN-047). Die übrigen Varianten bleiben eigene Kennzahlen für ausdrücklich gemeinte Fragen und verweisen in `verwandt` auf den Standard. Anlass: Der Harness zeigte für den Verlauf über alle Intakes den heutigen Kohortenstand (28 bis 35 %), Entscheider kennen aus dem Report rund 18 bis 22 %.
+
+**Ersatzquelle vor 0326.** `dashboard_opps` beginnt mit 0326. Gemessen am letzten Stand bis zum Census Date:
+
+| Intake | Bulletin-Lesart (`dashboard_opps`) | Cockpit (`cr_cockpit_enrolled`) | `kpis_opps`, Bachelor, Diploma und Advanced Diploma auf alle | Bulletin laut SAE-Wissen |
+|---|---|---|---|---|
+| 0325 | keine Quelle | 17,8 % | keine Quelle | nicht genannt |
+| 0925 | keine Quelle | 21,2 % | 18,4 % | 21,6 % |
+| 0326 | 16,8 % | 17,6 % | keine Quelle | nicht genannt |
+| 0926 | 17,6 % | 18,5 % | 15,4 % | 17,2 bis 17,6 % |
+
+`cockpit_l2e_parts` schließt an: Es liegt an 0326 und 0926 gleichmäßig 0,8 bis 0,9 Prozentpunkte über der Bulletin-Lesart und für 0925 nahe am veröffentlichten Bulletinwert. `kpis_opps` weicht für 0926 um gut 2 Punkte nach unten ab, weil die gesperrten Einschreibungsspalten zum Start fallen und ein Teil unter Unknown bzw. n/a steht. `opps_raw` führt für 0925 nur rund 17 eingeschriebene Opportunities. Eine Kurve über alle Intakes lautet damit: 0325 17,8 % und 0925 21,2 % aus dem Cockpit, 0326 16,8 % und 0926 17,6 % aus der Bulletin-Lesart, mit gekennzeichnetem Quellenwechsel. Vor 0325 gibt es keine Quelle. Alle Werte sind Rohwerte ohne die Ausschlüsse von Genf und Media University.
+
+**Spannung zum Kennzahlenkatalog.** `kk.cr_opp_enrollment` (K6 der Leitung BI, je Produktkategorie) bleibt unverändert, ist aber nicht mehr die Standardlesart in Berichten. Frage 13 an die SAE bleibt deshalb offen: Sie sollte bestätigen, dass Berichte die Bulletin-Rate meinen.
+
+## Standardvariante je Kennzahlfamilie (08.11.2026)
+
+**Anlass.** Bei Abbruchquote und Konversion gab es mehrere belegte Lesarten, aber keine war als SAE-Standard markiert. Das Modell wählte jeweils plausibel, aber anders als die Berichte der SAE. Neu sind deshalb die Spalten `standard` und `standard_quelle` in `kennzahlen.csv`, quer durch alle Themen.
+
+**Familien mit belegtem Standard (7):**
+
+| Familie | Standard | Varianten | Quelle des Standards |
+|---|---|---|---|
+| Konversion Opportunity zu Enrollment | `cr_opp_enrollment_bulletin` | 4 | Bulletin, FUN-001/046/047, Entscheidung des Nutzers |
+| Abbruch einer Startkohorte | `kk.abbruchquote` | 2 (Fenster, Nichtabschluss) | Dashboard Student Outcomes, K6 |
+| Neueinschreibungen | `kk.neueinschreibungen` | 7 (Salesforce-Sichten, Personen, Vertragszählungen) | K2 |
+| Opportunities | `kk.opportunities` | 2 | K1 |
+| Leads | `kk.leads` | 4 | 08b Objekt und Frage 28 |
+| Studierendenbestand | `kk.headcount` | 1 (FTE) | K3, Headcount Report (VER-001) |
+| Zielerreichung | `zielerreichung` | 1 (Prognose) | ZIE-017, ZIE-002 |
+
+Abdeckungsgrenzen der Standards stehen in `quellen`: Konversion vor 0326 über das Cockpit (siehe oben), Neueinschreibungen vor September 2016 über `enrollment_statistics_gsan_1`, Studierendenbestand vor 2019 über gültige Verträge in `enrollments_gsan` (ungeprüft), Leads vor Februar 2024 ohne Quelle. Opportunities hatten ihre Grenze schon (0925 über `kpis_opps`).
+
+**Familien ohne belegten Standard (4), offene Punkte:**
+
+16. **Abschlussquote:** Effective Award (`abschlussquote`) oder Original Award (`original_award_quote`)? Das Dashboard zeigt beide gleichrangig.
+17. **Einschreibungsziel:** Welche Zielfassung meint die SAE ohne Zusatz? Wochenreport (nur Core), Budget V2 und BI-Zielliste weichen um bis zu rund 250 Köpfe ab (ZIE-006, ZIE-014, ZIE-015). Davon hängt auch der Nenner der Zielerreichung ab.
+18. **Tours:** Welche Tourzählung berichtet die SAE, und gilt vor Oktober 2025 die Langreihe als Fortsetzung?
+19. **Follow-up:** Die Follow-up-Quote des Wochenreports (FUN-057) hat keine Katalogzeile. Sie braucht Anrufe oder Termine je neuem Lead, die Kopie führt Anrufe nur aggregiert.
+
+Kennzahlen ohne Varianten haben keinen Eintrag in `standard`. Das betrifft 51 von 87 Zeilen, etwa `kk.cr_lead_opp`, die Umfragekennzahlen und die Ausgangsquoten des Studienverlaufs. Für die Umfragen gibt es nur `kk.weiterempfehlung` als Kernkennzahl, eine konkurrierende Lesart fehlt. Die Familien sind von Hand nach gleicher Geschäftsgröße gebildet. Bloße Bestandteile wie Zähler, Nenner oder Zustände (etwa `opportunities_offen`) zählen nicht als Varianten.
+
