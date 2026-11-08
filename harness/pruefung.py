@@ -3,7 +3,9 @@
 Der Prüfer ist ein eigenes Gespräch mit derselben Anweisung (Katalog, SAE-Wissen, Datenzugang) und dem Prüfauftrag
 unten. Er sieht Frage, bisherigen Verlauf und Antwort, nicht den Rechenweg, und rechnet die Kernzahlen selbst nach.
 Ergebnis: bestätigt (Antwort bleibt) oder korrigiert (seine Fassung ersetzt die Antwort).
-Stand 08.11.2026: nur im Testtreiber (`pruef_test.py`), in der Oberfläche erst, wenn der Nutzen belegt ist.
+Nutzenprobe mit `pruef_test.py` am 08.11.2026 (11/11 falsche korrigiert, 12/12 richtige bestätigt), seither in der
+Oberfläche hinter dem Schalter Verify (web/app.py, pruefe). Die Oberfläche nutzt `PRUEFAUFTRAG`, `pruefauftrag_text`
+und `auswerten`, der Testtreiber `pruefen`.
 """
 
 import re

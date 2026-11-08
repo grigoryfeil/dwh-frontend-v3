@@ -1,7 +1,12 @@
 # DWH Frontend V3, Weboberfläche. Hinter dem HAProxy auf 443: nginx lauscht nur auf 9443 mit proxy_protocol.
 # Login und Drosselung übernimmt das Backend, es sieht die Adresse über X-Forwarded-For.
-# Die Seite fragt den Stand alle zwei Sekunden ab, lange Requests gibt es nicht.
-limit_req_zone $binary_remote_addr zone=dwhv3:1m rate=60r/m;
+# Die Seite fragt den Stand alle zwei Sekunden ab, lange Requests gibt es nicht. Lesen und Schreiben sind getrennt
+# gedrosselt: Mehrere Tester hinter einer Firmenadresse pollen zusammen über 60 Mal je Minute, und das Polling darf
+# neue Fragen und Abbrüche nicht verdrängen (Befund Code-Review 08.11.2026).
+map $request_method $dwhv3_lesend { GET $binary_remote_addr; HEAD $binary_remote_addr; default ""; }
+map $request_method $dwhv3_schreibend { GET ""; HEAD ""; default $binary_remote_addr; }
+limit_req_zone $dwhv3_lesend zone=dwhv3_lesen:1m rate=300r/m;
+limit_req_zone $dwhv3_schreibend zone=dwhv3_schreiben:1m rate=60r/m;
 
 server {
     listen 127.0.0.1:9443 ssl proxy_protocol;
@@ -18,7 +23,8 @@ server {
     client_max_body_size 16k;
     add_header Strict-Transport-Security "max-age=31536000" always;
 
-    limit_req zone=dwhv3 burst=30 nodelay;
+    limit_req zone=dwhv3_lesen burst=120 nodelay;
+    limit_req zone=dwhv3_schreiben burst=30 nodelay;
     limit_req_status 429;
 
     location / {

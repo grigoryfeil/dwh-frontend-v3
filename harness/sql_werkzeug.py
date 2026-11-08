@@ -39,18 +39,29 @@ def sql_ausfuehren(abfrage):
         verbindung = pymysql.connect(read_default_file=OPTIONSDATEI)
     except pymysql.MySQLError as fehler:
         return {"fehler": str(fehler)}
+    offen = []
     try:
-        with verbindung.cursor() as cursor:
-            cursor.execute(abfrage)
-            if cursor.description is None:
-                return {"spalten": [], "zeilen": [], "gekuerzt": False}
-            spalten = [b[0] for b in cursor.description]
-            zeilen = [[_json_wert(w) for w in z] for z in cursor.fetchmany(ZEILEN_MAX + 1)]
+        # Ungepuffert: Der normale Cursor lädt das ganze Ergebnis schon bei execute in den Speicher, die Zeilengrenze
+        # käme zu spät. Nach der Grenze wird die Verbindung geschlossen, ohne den Rest zu lesen.
+        cursor = verbindung.cursor(pymysql.cursors.SSCursor)
+        offen.append(cursor)
+        cursor.execute(abfrage)
+        if cursor.description is None:
+            return {"spalten": [], "zeilen": [], "gekuerzt": False}
+        spalten = [b[0] for b in cursor.description]
+        zeilen = [[_json_wert(w) for w in z] for z in cursor.fetchmany(ZEILEN_MAX + 1)]
         return {"spalten": spalten, "zeilen": zeilen[:ZEILEN_MAX], "gekuerzt": len(zeilen) > ZEILEN_MAX}
     except pymysql.MySQLError as fehler:
         return {"fehler": str(fehler)}
     finally:
-        verbindung.close()
+        for cursor in offen:  # den ungelesenen Rest verwerfen statt ihn beim Aufräumen doch noch abzuholen
+            if cursor._result is not None:
+                cursor._result.unbuffered_active = False
+                cursor._result = None
+        try:
+            verbindung.close()
+        except Exception:  # noqa: BLE001, beim Abbruch eines ungelesenen Ergebnisses
+            pass
 
 
 def main():

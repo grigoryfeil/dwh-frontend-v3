@@ -4,7 +4,9 @@ Das Modell verweist mit absolutem Pfad (`/var/lib/dwh-frontend-v3/gespraeche/web
 (`bild.png`) darauf. Solche Verweise werden in den Vertrag der Oberfläche übersetzt
 (`/api/gespraeche/<id>/dateien/<name>`) und als `dateien` der Runde gemeldet. Nur gemeldete Dateien werden
 ausgeliefert, nur reguläre Dateien innerhalb des Verzeichnisses, ohne Symlinks: Bilder, Tabellen und Dashboards.
-Andere Pfade bleiben Text.
+Andere Pfade bleiben Text. Am Ende jeder Runde werden ihre Dateien nach `.runden/<nummer>/` kopiert und unter
+`/api/gespraeche/<id>/dateien/r<nummer>/<name>` ausgeliefert: Überschreibt eine spätere Runde dieselbe Datei, zeigt
+eine ältere Antwort weiter ihren eigenen Stand.
 
 Dashboards (Data App des Data-Plugins) sind eigenständiges HTML mit Skript und eingebetteten Daten. Sie laufen nur im
 Rahmen der eigenen Seite (`Sec-Fetch-Dest: iframe`, `frame-ancestors 'self'`) in einer Sandbox mit fremdem Ursprung,
@@ -14,7 +16,9 @@ der nichts ausführt; so liest die Oberfläche auch den Titel. SVG bleibt drauß
 
 import os
 import re
+import shutil
 import stat
+from pathlib import Path
 from urllib.parse import quote, unquote
 
 ARTEN = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "webp": "image/webp",
@@ -63,7 +67,7 @@ def oeffne(cwd, name):
             neu = os.open(teil, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
             os.close(fd)
             fd = neu
-        datei = os.open(teile[-1], os.O_RDONLY | os.O_NOFOLLOW, dir_fd=fd)
+        datei = os.open(teile[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)  # keine FIFO-Falle
     except OSError:
         return None
     finally:
@@ -84,13 +88,38 @@ def gueltig(cwd, name):
     return True
 
 
-def uebersetze(text, cwd, kennung):
-    """Antworttext mit übersetzten Verweisen und die Liste der Dateien [{name, url}] in Reihenfolge."""
+def sichere(cwd, nummer, namen):
+    """Kopiert die gemeldeten Dateien der Runde `nummer` nach `.runden/<nummer>/` (Stand dieser Antwort)."""
+    for name in namen:
+        quelle = oeffne(cwd, name)
+        if quelle is None:
+            continue
+        ziel = Path(cwd) / ".runden" / str(nummer) / name
+        try:
+            ziel.parent.mkdir(parents=True, exist_ok=True)
+            with quelle, open(ziel, "wb") as f:
+                shutil.copyfileobj(quelle, f)
+        except OSError:
+            continue
+
+
+def aufloesen(name):
+    """URL-Name `r<nummer>/<name>` → (nummer, name, Pfad im Gesprächsverzeichnis), sonst (None, name, name)."""
+    treffer = re.fullmatch(r"r(\d{1,4})/(.+)", name)
+    if not treffer:
+        return None, name, name
+    return int(treffer.group(1)), treffer.group(2), f".runden/{int(treffer.group(1))}/{treffer.group(2)}"
+
+
+def uebersetze(text, cwd, kennung, nummer=None):
+    """Antworttext mit übersetzten Verweisen und die Liste der Dateien [{name, url}] in Reihenfolge. Mit `nummer`
+    zeigen die Verweise auf den gesicherten Stand der Runde (sichere)."""
     basis = str(cwd).rstrip("/")
     gefunden = {}
+    vorsatz = f"r{nummer}/" if nummer else ""
 
     def url(name):
-        gefunden.setdefault(name, f"/api/gespraeche/{kennung}/dateien/{quote(name)}")
+        gefunden.setdefault(name, f"/api/gespraeche/{kennung}/dateien/{vorsatz}{quote(name)}")
         return gefunden[name]
 
     def absolut(m):

@@ -9,6 +9,7 @@ der dann selbst als `dwhv3` in einer gehärteten Unit laufen muss (Weboberfläch
 import json
 import os
 import queue
+import shutil
 import subprocess
 import threading
 import time
@@ -65,13 +66,19 @@ class Gespraech:
 
     def __enter__(self):
         codex = [CODEX, "app-server", "--strict-config", "--stdio"]
+        # Eigenes temporäres Verzeichnis je Gespräch: /tmp ist für die Modell-Shell gesperrt (codex-config.toml),
+        # sonst teilen sich alle Gespräche der Web-Unit dort einen Bereich.
+        tmp = os.path.join(self.cwd, ".tmp")
+        os.makedirs(tmp, exist_ok=True)
+        if os.geteuid() == 0:
+            shutil.chown(tmp, "dwhv3", "dwhv3")
         if self.direkt:
-            umgebung = {**UMGEBUNG, **{k: v for k, v in os.environ.items() if k in ("TZ",)}}
+            umgebung = {**UMGEBUNG, "TMPDIR": tmp, **{k: v for k, v in os.environ.items() if k in ("TZ",)}}
             self._prozess = subprocess.Popen(codex, cwd=self.cwd, env=umgebung, stdin=subprocess.PIPE,
                                              stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1,
                                              start_new_session=True)
         else:
-            befehl = SYSTEMD_RUN + ["-p", f"WorkingDirectory={self.cwd}"] + codex
+            befehl = SYSTEMD_RUN + ["-p", f"WorkingDirectory={self.cwd}", "-E", f"TMPDIR={tmp}"] + codex
             self._prozess = subprocess.Popen(befehl, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                              stderr=subprocess.DEVNULL, text=True, bufsize=1)
         threading.Thread(target=self._lies, daemon=True).start()

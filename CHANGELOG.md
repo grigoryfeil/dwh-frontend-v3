@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.6.0 (08.11.2026)
+
+Härtung vor der Beta nach drei Reviews (Codex Astra, Code-Review Standards und Spezifikation), siehe `handover/2026-11-08-zweitmeinung-code-beta-ergebnis.md`.
+
+- Gesprächslebenszyklus: Nach Leerlauf, bei Platzmangel oder nach einem Fehler ruht ein Gespräch (Modellprozess frei, Verlauf und Dateien bleiben). Die nächste Frage setzt mit dem sichtbaren Verlauf fort. Plätze zählen nur laufende Prozesse, bei Bedarf ruht das am längsten unbenutzte Gespräch. Session-Leerlauf 4 Stunden.
+- Prüfrunde: Korrekturen erreichen das Hauptgespräch vor der nächsten Frage. Keine Prüfrunde auf Rückfragen. Abbruch ohne Wettlauf.
+- Dateien je Runde unveränderlich gesichert (`.runden/<n>/`), eine spätere Runde ändert ältere Antworten nicht mehr. Öffnen ohne FIFO-Falle.
+- Sandbox: `/tmp` gesperrt, temporäre Dateien je Gespräch (`TMPDIR`).
+- „Heute“ in der Anweisung je Gespräch statt beim Start des Dienstes.
+- Drosselung: nginx trennt Lesen (300/min) und Schreiben (60/min) je Adresse, erfolgreiche Anmeldung setzt den Adresszähler zurück. Fehlerhafte nginx-Fassung wird beim Einspielen zurückgespielt.
+- SQL-Werkzeug liest ungepuffert, die Zeilengrenze schützt den Speicher.
+- Einspielen bricht ab, solange Modellprozesse laufen (`ERZWINGEN=1` übergeht das).
+- Prüfrunde bekommt die in der Antwort genannten Dateien als Kopie (die Sandbox sperrt das Gesprächsverzeichnis).
+- Katalog nach 08b nachgezogen (Session BI-Team): `cr_cockpit_enrolled` und `programmgebuehr` ersetzt. Themenansichten blenden Kennzahlen mit `status=entfallen` aus, die Anweisung erklärt den Status.
+- Prüfläufe 0.6.0: Weboberfläche 10/10, Dashboards 5/5 ohne verweigerte `/tmp`-Zugriffe, Diagramm mit Nachfrage und Prüfrunde bestätigt, Selbsttest grün, SQL-Grenze bei Riesenergebnis 0,0 s und 31 MB.
+- Regressionstests `tests/test_web_lebenszyklus.py` (scheitern an 0.5.1, bestehen an 0.6.0). README und Docstrings auf den Stand gebracht.
+
 ## 0.5.1 (08.11.2026)
 
 - Oberfläche: Die Kopfzeile einer geprüften Antwort zeigt „Verified“ oder „Corrected after verification“.

@@ -59,9 +59,16 @@ if [[ ! -e /etc/letsencrypt/live/$domain/fullchain.pem ]]; then
   certbot certonly --webroot -w /var/www/html -d "$domain" --non-interactive --agree-tos \
     --key-type ecdsa --no-eff-email --register-unsafely-without-email --quiet
 fi
+# nginx bedient auch V1 und V2: eine fehlerhafte Fassung nie aktiv lassen, sondern die alte zurückspielen
+[[ -e /etc/nginx/sites-available/dwhv3 ]] && cp -a /etc/nginx/sites-available/dwhv3 /etc/nginx/sites-available/.dwhv3.alt
 install -m 0644 -o root -g root "$quelle/betrieb/nginx-dwhv3" /etc/nginx/sites-available/dwhv3
 ln -sfn /etc/nginx/sites-available/dwhv3 /etc/nginx/sites-enabled/dwhv3
-nginx -t -q
+if ! nginx -t -q; then
+  [[ -e /etc/nginx/sites-available/.dwhv3.alt ]] && mv /etc/nginx/sites-available/.dwhv3.alt /etc/nginx/sites-available/dwhv3
+  echo "nginx-Konfiguration fehlerhaft, alte Fassung zurückgespielt" >&2
+  exit 1
+fi
+rm -f /etc/nginx/sites-available/.dwhv3.alt
 systemctl reload nginx
 /usr/local/sbin/surveylens-port-preflight --all >/dev/null
 

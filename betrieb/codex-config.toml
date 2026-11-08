@@ -95,14 +95,16 @@ args = ["-I", "/opt/dwh-frontend-v3/app/harness/sql_werkzeug.py"]
 env = { DWH_OPTIONSDATEI = "/etc/dwh-frontend-v3/dwh-leser.cnf" }
 required = true
 
-# Shell des Modells: liest das System, schreibt nur ins Gesprächsverzeichnis und /tmp, kein Netz,
+# Shell des Modells: liest das System, schreibt nur ins eigene Gesprächsverzeichnis, kein Netz,
 # kein Zugriff auf Login, Lesekonto, DB-Socket und andere Gespräche.
 [permissions.dwhv3]
 description = "DWH Frontend V3: Shell ohne Zugangsdaten, Datenbank, Netz und fremde Gespräche."
 
 [permissions.dwhv3.filesystem]
 ":root" = "read"
-"/tmp" = "write"
+# /tmp ist gesperrt: Alle Gespräche der Web-Unit teilen sich ein /tmp. Jedes Gespräch bekommt statt dessen TMPDIR
+# im eigenen Verzeichnis (harness/sitzung.py). Geprüft mit `codex sandbox` am 08.11.2026 (Python, Node, spawnSync).
+"/tmp" = "deny"
 "/var/lib/dwh-frontend-v3/codex-home/auth.json" = "deny"
 "/var/lib/dwh-frontend-v3/codex-home/cache" = "deny"
 "/var/lib/dwh-frontend-v3/codex-home/log" = "deny"

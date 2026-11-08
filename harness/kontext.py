@@ -37,7 +37,7 @@ def _feld(name, wert):
 
 def _bestand(katalog, wissen):
     objekte = [z for z in _zeilen(Path(katalog) / "objekte.csv") if z["status"] != "entfallen"]
-    kennzahlen = _zeilen(Path(katalog) / "kennzahlen.csv")
+    kennzahlen = [z for z in _zeilen(Path(katalog) / "kennzahlen.csv") if z["status"] != "entfallen"]
     eintraege = [z for z in _zeilen(Path(wissen) / "eintraege.csv") if z.get("status") != "veraltet"]
     return objekte, kennzahlen, eintraege
 

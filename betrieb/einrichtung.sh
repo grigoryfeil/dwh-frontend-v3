@@ -3,6 +3,14 @@
 # Aufruf: betrieb/einrichtung.sh <Pfad zum entpackten Repo-Stand auf dem VPS>
 set -euo pipefail
 quelle="${1:?Repo-Stand fehlt}"
+
+# Wartungsfenster: Einspielen tauscht Dateien unter laufenden Prozessen und startet die Web-Unit neu, laufende
+# Gespräche gingen verloren. Deshalb nur, wenn kein Modellprozess läuft (oder ausdrücklich mit ERZWINGEN=1).
+laufend=$(pgrep -u dwhv3 -fc "app-server" || true)
+if [[ ${laufend:-0} -gt 0 && ${ERZWINGEN:-0} != 1 ]]; then
+  echo "einrichtung: $laufend Modellprozess(e) laufen, abgebrochen. Später erneut oder mit ERZWINGEN=1." >&2
+  exit 1
+fi
 V2=/opt/dwh-frontend-v2
 APP=/opt/dwh-frontend-v3/app
 H=/var/lib/dwh-frontend-v3/codex-home
@@ -53,7 +61,7 @@ cp -r "$quelle/harness" "$quelle/katalog" "$quelle/VERSION" "$APP.neu/"
 [[ -d $quelle/wissen ]] && cp -r "$quelle/wissen" "$APP.neu/"
 [[ -d $quelle/web ]] && cp -r "$quelle/web" "$APP.neu/"
 # Themenansichten aus Katalog und SAE-Wissen erzeugen (die Anweisung verweist darauf)
-python3 -I "$APP.neu/harness/kontext.py" --themen "$APP.neu/katalog" "$APP.neu/wissen" "$APP.neu/kontext" 2>/dev/null
+python3 -I "$APP.neu/harness/kontext.py" --themen "$APP.neu/katalog" "$APP.neu/wissen" "$APP.neu/kontext" >/dev/null
 chown -R root:root "$APP.neu" && chmod -R a+rX "$APP.neu"
 rm -rf "$APP" && mv "$APP.neu" "$APP"
 

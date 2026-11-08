@@ -2,11 +2,12 @@
 
 Vertrag wie die Oberfläche aus V2 ihn erwartet (`oberflaeche/src/api.ts`): Eine Frage läuft im Hintergrund, die
 Seite fragt alle zwei Sekunden den Stand ab. Ein Gespräch ist ein `harness.sitzung.Gespraech`, das zwischen den
-Runden offen bleibt und nach Leerlauf endet. Gespräche liegen nur im Arbeitsspeicher und gehören der Session, die
+Runden offen bleibt. Nach Leerlauf, bei Platzmangel oder nach einem Fehler ruht es: Der Modellprozess endet, Verlauf und
+Dateien bleiben, die nächste Frage setzt mit dem sichtbaren Verlauf fort. Gespräche liegen nur im Arbeitsspeicher und gehören der Session, die
 sie begonnen hat. Endet die Session, enden ihre Gespräche. TLS übernimmt nginx.
 
-Bedient wird nur, was die Oberfläche braucht. Export, Feedback, Ablage und Beispiele gibt es nicht, die Oberfläche
-kommt ohne sie aus (Antwort 404 bzw. `ablage: false`). Felder ohne V3-Gegenstück (`beleg`, `abfragen`) bleiben
+Bedient wird nur, was die Oberfläche braucht. Export und Beispiele gibt es nicht, die Oberfläche kommt ohne sie aus
+(Antwort 404). Ablage und Feedback gibt es nur mit eingeschalteter Beta-Ablage, sonst `ablage: false`. Felder ohne V3-Gegenstück (`beleg`, `abfragen`) bleiben
 leer. SQL geht nie an die Seite (Entscheidung Grigory, 08.11.2026), `abfragen` bleibt deshalb immer leer. Mit dem
 Schalter `verifizieren` prüft ein zweites Gespräch die Antwort (harness/pruefung.py), das Ergebnis steht in `pruefung`. Dateien, die die Antwort im eigenen Gesprächsverzeichnis nennt (etwa
 Diagramme und Dashboards), übersetzt web/dateien.py in `dateien` und liefert nur diese aus. Mit eingeschalteter
@@ -68,9 +69,9 @@ class Einstellungen:
     sicher: bool = True  # Cookie nur über HTTPS, lokal zum Testen aus
     zeitlimit: int = 600  # Sekunden je Runde
     max_gespraeche: int = 4  # gleichzeitig offene Modellprozesse
-    leerlauf: int = 1800  # Sekunden ohne Frage, danach endet ein Gespräch
+    leerlauf: int = 1800  # Sekunden ohne Frage, danach ruht ein Gespräch (Prozess frei, Verlauf bleibt)
     abbruch_frist: float = 30  # endet eine abgebrochene Runde so lange nicht, wird das Gespräch geschlossen
-    session_leerlauf: int = 3600
+    session_leerlauf: int = 4 * 3600  # Beta: Pausen zwischen Fragen sind länger als eine Stunde
     session_absolut: int = 8 * 3600
     direkt: bool = True  # Codex als Kind dieses Prozesses (Unit als dwhv3), sonst über systemd-run (als root)
     ablage: Path | None = None  # Beta-Ablage (web/ablage.py), ohne sie weder Speichern noch Feedback
@@ -140,9 +141,10 @@ class Eintrag:
         self.ablage_sperre = threading.Lock()
         self.gespraech = None  # wird im Hintergrund gestartet, das dauert einige Sekunden
         self.pruefer = None  # Prüfgespräch der laufenden Runde, nur während der Prüfrunde
+        self.korrektur = None  # von der Prüfrunde korrigierte Antwort, die das Modell noch nicht kennt
         self.runden = []
         self.laeuft = False
-        self.beendet = False  # nach einem Fehler ist der Zustand des Modellprozesses unklar
+        self.beendet = False  # geschlossen (Session-Ende, Löschen), danach keine Fragen mehr
         self.abbruch = None
         self.fortschritt = None
         self.zuletzt = time.monotonic()
@@ -176,11 +178,15 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
     anweisung = kontext.anweisung(lauf.APP / "katalog", lauf.APP / "wissen", stand_deutsch) \
         if gespraech_fabrik is None else ""
     if gespraech_fabrik is None:
+        def aktuelle_anweisung():  # je Gespräch neu, damit „heute“ stimmt, auch wenn der Dienst Wochen läuft
+            return kontext.anweisung(lauf.APP / "katalog", lauf.APP / "wissen", stand_deutsch)
+
         def gespraech_fabrik(cwd):
-            return Gespraech(cwd, anweisung, zeitlimit=e.zeitlimit, direkt=e.direkt)
+            return Gespraech(cwd, aktuelle_anweisung(), zeitlimit=e.zeitlimit, direkt=e.direkt)
 
         def pruefer_fabrik(cwd):
-            return Gespraech(cwd, anweisung + pruefung.PRUEFAUFTRAG, zeitlimit=e.zeitlimit, direkt=e.direkt)
+            return Gespraech(cwd, aktuelle_anweisung() + pruefung.PRUEFAUFTRAG, zeitlimit=e.zeitlimit,
+                             direkt=e.direkt)
     elif pruefer_fabrik is None:
         pruefer_fabrik = gespraech_fabrik
 
@@ -259,12 +265,40 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 for schl, s in list(sessions.items()):
                     if jetzt - s.zuletzt > e.session_leerlauf or jetzt - s.begonnen > e.session_absolut:
                         zu += session_beenden(schl) or []
+                ruhend = []
                 for g in list(gespraeche.values()):
-                    if not g.laeuft and jetzt - g.zuletzt > e.leerlauf:
+                    if not g.laeuft and jetzt - g.zuletzt > e.session_absolut:
                         del gespraeche[g.kennung]
                         zu.append(g)
+                    elif not g.laeuft and g.gespraech is not None and jetzt - g.zuletzt > e.leerlauf:
+                        ruhend.append(loese_prozess(g))
             for g in zu:
                 g.schliessen()
+            for prozess in ruhend:
+                beende_prozess(prozess)
+
+    def loese_prozess(g):
+        """Unter der Sperre: löst den Modellprozess eines ruhenden Gesprächs. Verlauf und Dateien bleiben, die nächste
+        Frage startet einen neuen Prozess und bekommt den sichtbaren Verlauf mit (beantworte). Rückgabe: der Prozess,
+        der außerhalb der Sperre zu beenden ist."""
+        prozess, g.gespraech, g.korrektur = g.gespraech, None, None
+        return prozess
+
+    def beende_prozess(prozess):
+        if prozess is not None:
+            try:
+                prozess.__exit__(None, None, None)
+            except Exception:  # noqa: BLE001, auch ein halb gestarteter Prozess wird beendet
+                pass
+
+    def platz_schaffen():
+        """Unter der Sperre: ist kein Modellprozess frei, ruht das am längsten unbenutzte Gespräch. Rückgabe: der zu
+        beendende Prozess, None wenn ein Platz frei ist, False wenn alle Prozesse gerade arbeiten."""
+        aktiv = [g for g in gespraeche.values() if not g.beendet and (g.laeuft or g.gespraech is not None)]
+        if len(aktiv) < e.max_gespraeche:
+            return None
+        ruhig = sorted((g for g in aktiv if not g.laeuft), key=lambda g: g.zuletzt)
+        return loese_prozess(ruhig[0]) if ruhig else False
 
     threading.Thread(target=raeumen, daemon=True).start()
 
@@ -335,6 +369,16 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         cwd = eintrag.cwd / "pruefung"
         try:
             cwd.mkdir(exist_ok=True)
+            # Die Sandbox sperrt das Gesprächsverzeichnis für den Prüfer: genannte Dateien bekommt er als Kopie
+            _, genannt = dateien.uebersetze(text, eintrag.cwd, eintrag.kennung)
+            kopiert = []
+            for d in genannt:
+                quelle = dateien.oeffne(eintrag.cwd, d["name"])
+                if quelle is not None:
+                    (cwd / d["name"]).parent.mkdir(parents=True, exist_ok=True)
+                    with quelle, open(cwd / d["name"], "wb") as f:
+                        shutil.copyfileobj(quelle, f)
+                    kopiert.append(d["name"])
             p = pruefer_fabrik(cwd)
             with sperre:
                 eintrag.pruefer = p
@@ -342,7 +386,11 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 p.__enter__()
                 if eintrag.abbruch:
                     raise Sitzungsfehler("Runde abgebrochen")
-                r = p.frage(pruefung.pruefauftrag_text(verlauf, runde["frage"], text),
+                auftrag = pruefung.pruefauftrag_text(verlauf, runde["frage"], text)
+                if kopiert:
+                    auftrag += ("\n\n---\n\nDie in der Antwort genannten Dateien liegen als Kopie in deinem "
+                                f"Arbeitsverzeichnis: {', '.join(kopiert)}.")
+                r = p.frage(auftrag,
                             beobachter=lambda n: beobachter.ereignis(n, p._turn_id))
             finally:
                 with sperre:
@@ -358,6 +406,21 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             return text, {"status": "bestaetigt", "hinweis": None, "ms": ms, "grund": grund}
         return text, {"status": "gescheitert", "ms": ms, "grund": grund,
                       "hinweis": "The verification could not be completed, so this answer is unverified."}
+
+    def an_das_modell(eintrag, runde):
+        """Text der Runde für das Modell. Nach einer Pause (neuer Prozess) steht davor der Verlauf, wie der Nutzer ihn
+        sieht, nach einer Korrektur der Prüfrunde deren Fassung: Nachfragen bauen auf dem auf, was der Nutzer las."""
+        frage = runde["frage"]
+        frueher = [(r["frage"], r["antwort"]) for r in eintrag.runden[:-1] if r.get("antwort")]
+        if eintrag.gespraech is None and frueher:
+            verlauf = "\n\n".join(f"Nutzer: {f}\n\nAnalyst: {a}" for f, a in frueher)
+            return ("Hinweis der Anwendung: Dieses Gespräch wurde nach einer Pause neu gestartet. Bisheriger Verlauf, "
+                    f"wie der Nutzer ihn sieht:\n\n{verlauf}\n\n---\n\nNeue Frage des Nutzers:\n\n{frage}")
+        if eintrag.korrektur:
+            return ("Hinweis der Anwendung: Eine Prüfrunde hat deine vorige Antwort korrigiert. Der Nutzer hat diese "
+                    f"Fassung gesehen, beziehe dich auf sie:\n\n{eintrag.korrektur}\n\n---\n\n"
+                    f"Neue Frage des Nutzers:\n\n{frage}")
+        return frage
 
     def beantworte(eintrag, runde):
         nummer = len(eintrag.runden)
@@ -381,6 +444,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 eintrag.zuletzt = time.monotonic()
             archiviere(eintrag, nummer, runde, "abgebrochen", items, vorher, ergebnis)
 
+        text_modell = an_das_modell(eintrag, runde)
+        eintrag.korrektur = None
         try:
             if eintrag.gespraech is None:
                 g = gespraech_fabrik(eintrag.cwd)
@@ -389,7 +454,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             if eintrag.abbruch:
                 raise Sitzungsfehler("Runde abgebrochen")
             g = eintrag.gespraech
-            ergebnis = g.frage(runde["frage"], beobachter=lambda n: beobachte(n, g))
+            ergebnis = g.frage(text_modell, beobachter=lambda n: beobachte(n, g))
         except Exception as fehl:  # noqa: BLE001, jede Ausnahme beendet die Runde
             if eintrag.abbruch and isinstance(fehl, Sitzungsfehler) and eintrag.gespraech is not None \
                     and eintrag.gespraech.thread_id:
@@ -403,17 +468,24 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                     runde["fehler"] = meldung
                 eintrag.laeuft, eintrag.fortschritt = False, None
             archiviere(eintrag, nummer, runde, "abgebrochen" if eintrag.abbruch else "fehler", items, vorher)
-            eintrag.schliessen()
+            # Der Zustand des Modellprozesses ist unklar: nur ihn beenden. Das Gespräch bleibt, die nächste Frage
+            # startet einen neuen Prozess mit dem sichtbaren Verlauf (an_das_modell).
+            with sperre:
+                prozess = loese_prozess(eintrag)
+            beende_prozess(prozess)
             return
         if eintrag.abbruch:  # wer abbricht, will die Antwort nicht mehr, auch wenn sie schon stand
             return abgebrochen(ergebnis)
         text, ergebnis_pruefung = ergebnis.text, None
-        if runde.get("verifizieren"):
+        if runde.get("verifizieren") and not text.lstrip().startswith("[Rückfrage]"):
             text, ergebnis_pruefung = pruefe(eintrag, runde, text, beobachter)
             if eintrag.abbruch:
                 return abgebrochen(ergebnis)
+            if ergebnis_pruefung["status"] == "korrigiert":
+                eintrag.korrektur = text
         protokolliere(eintrag, nummer, "fertig", ergebnis)
-        antwort, gemeldet = dateien.uebersetze(text, eintrag.cwd, eintrag.kennung)
+        antwort, gemeldet = dateien.uebersetze(text, eintrag.cwd, eintrag.kennung, nummer)
+        dateien.sichere(eintrag.cwd, nummer, [d["name"] for d in gemeldet])
         with sperre:
             if ergebnis_pruefung:
                 runde["pruefung"] = ergebnis_pruefung
@@ -454,6 +526,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         if not kontendatei.pruefe(email, daten.get("passwort", "")):
             return fehler(401, "E-Mail oder Passwort stimmt nicht")
         drossel.zuruecksetzen(f"konto:{email}")
+        drossel.zuruecksetzen(f"ip:{adresse}")  # Beta: mehrere Tester hinter einer Firmenadresse, nur Fehlversuche zählen
         token = secrets.token_urlsafe(32)
         jetzt = time.monotonic()
         alt = request.cookies.get(COOKIE)
@@ -503,7 +576,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             if kennung is None:
                 for g in [g for g in gespraeche.values() if not g.laeuft and g.beendet]:
                     del gespraeche[g.kennung]
-                if sum(1 for g in gespraeche.values() if not g.beendet) >= e.max_gespraeche:
+                frei = platz_schaffen()
+                if frei is False:
                     return fehler(503, "Alle Plätze belegt, bitte später erneut versuchen")
                 kennung = secrets.token_hex(16)
                 cwd = e.gespraeche / f"web-{kennung}"
@@ -518,11 +592,15 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                     return fehler(410, "Gespräch beendet, bitte ein neues beginnen")
                 if eintrag.laeuft:
                     return fehler(409, "Im Gespräch läuft noch eine Frage")
+                frei = platz_schaffen() if eintrag.gespraech is None else None
+                if frei is False:
+                    return fehler(503, "Alle Plätze belegt, bitte später erneut versuchen")
             eintrag.runden.append(runde)
             eintrag.speichern = bool(daten.get("speichern")) and ablage is not None
             eintrag.laeuft = True
             eintrag.abbruch = None
             eintrag.zuletzt = time.monotonic()
+        beende_prozess(frei or None)
         threading.Thread(target=beantworte, args=(eintrag, runde), daemon=True).start()
         return JSONResponse({"gespraech": kennung}, status_code=202)
 
@@ -560,12 +638,12 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         s = hole_session(request)
         if s is None:
             return nicht_angemeldet()
-        name = request.path_params["name"]
+        nummer, name, pfad = dateien.aufloesen(request.path_params["name"])
         with sperre:
             eintrag = eigenes(request, s)
-            gemeldet = eintrag is not None and any(d["name"] == name for r in eintrag.runden
-                                                   for d in r.get("dateien") or [])
-        datei_ = dateien.oeffne(eintrag.cwd, name) if gemeldet else None
+            gemeldet = eintrag is not None and any(d["name"] == name for i, r in enumerate(eintrag.runden, 1)
+                                                   if nummer in (None, i) for d in r.get("dateien") or [])
+        datei_ = dateien.oeffne(eintrag.cwd, pfad) if gemeldet else None
         if datei_ is None:
             return fehler(404, "Datei unbekannt")
         with datei_:
@@ -632,12 +710,12 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             if not eintrag.laeuft:
                 return fehler(409, "Im Gespräch läuft keine Frage")
             eintrag.abbruch = marke
+        with sperre:
+            ziel = eintrag.pruefer or eintrag.gespraech
         try:
-            if eintrag.pruefer is not None and eintrag.pruefer.thread_id:
-                eintrag.pruefer.unterbrechen()
-            elif eintrag.gespraech is not None and eintrag.gespraech.thread_id:
-                eintrag.gespraech.unterbrechen()
-        except (OSError, ValueError):
+            if ziel is not None and ziel.thread_id:
+                ziel.unterbrechen()
+        except Exception:  # noqa: BLE001, die Notbremse unten greift auch dann
             pass
 
         def notbremse():
