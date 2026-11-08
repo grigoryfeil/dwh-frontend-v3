@@ -34,6 +34,7 @@ chown -R root:root /opt/dwh-frontend-v3/codex "/opt/dwh-frontend-v3/$(basename "
 install -d -m 0755 -o root -g root /opt/dwh-frontend-v3/umgebung /opt/dwh-frontend-v3/umgebung/bin
 install -m 0644 -o root -g root "$quelle/betrieb/umgebung/spawn-ohne-eingabe-pipe.cjs" /opt/dwh-frontend-v3/umgebung/
 ln -sfn /usr/bin/python3 /opt/dwh-frontend-v3/umgebung/bin/python
+install -m 0644 -o root -g root "$quelle/betrieb/umgebung/profile" /var/lib/dwh-frontend-v3/.profile
 
 # Login und Plugin-Cache einmalig aus V2 übernehmen.
 if [[ ! -e $H/auth.json ]]; then

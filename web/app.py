@@ -740,10 +740,17 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             pass
 
         def notbremse():
+            # Hängt die Runde nach dem Abbruch weiter: nur den Prozess beenden, das Gespräch ruht wie nach einem
+            # Fehler und setzt mit dem sichtbaren Verlauf fort. Die hängende Runde endet dann mit einem Fehler.
             with sperre:
                 haengt = eintrag.laeuft and eintrag.abbruch is marke
-            if haengt:
-                eintrag.schliessen()
+                if not haengt:
+                    prozess = None
+                elif eintrag.pruefer is not None:  # Prüfrunde hängt: der Hauptprozess bleibt
+                    prozess = eintrag.pruefer
+                else:
+                    prozess = loese_prozess(eintrag)
+            beende_prozess(prozess)
 
         zeitgeber = threading.Timer(e.abbruch_frist, notbremse)
         zeitgeber.daemon = True

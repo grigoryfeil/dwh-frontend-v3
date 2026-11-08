@@ -1,0 +1,5 @@
+# ~/.profile des Nutzers dwhv3 (/var/lib/dwh-frontend-v3/.profile, root 0644), installiert von einrichtung.sh.
+# Codex startet die Modell-Shell als Login-Shell (bash -lc), dabei setzt /etc/profile PATH zurück und der Pfad aus
+# codex-config.toml (shell_environment_policy) ginge verloren: python und node fehlten. Befund 09.11.2026.
+PATH="/opt/dwh-frontend-v3/umgebung/bin:/opt/dwh-frontend-v3/node/bin:$PATH"
+export PATH

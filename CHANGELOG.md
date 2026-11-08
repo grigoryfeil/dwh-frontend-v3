@@ -10,7 +10,11 @@ Zweite Prüfung durch Codex Astra (`handover/2026-11-09-zweitmeinung-haertung-re
 - Grenzen: höchstens 24 behaltene Gespräche, darüber endet das älteste ruhende. Der Verlaufsvorspann nach einer Pause nimmt die jüngsten 6 Runden, Antworten auf 4.000 Zeichen gekürzt.
 - Oberfläche: Ist ein Gespräch wirklich beendet (etwa nach einem Neustart), erscheint „This conversation has ended“ statt einer still neu gestellten Frage ohne Verlauf.
 - Einspielen: gemeinsame Sperre in `betrieb/wartung.sh` für beide Einspielwege, zählt auch ruhende Gespräche.
-- Regressionstests: 9 (die 4 neuen scheitern an 0.6.2).
+- Modell-Shell: `.profile` für `dwhv3` ergänzt den Pfad wieder, den die Login-Shell (`bash -lc`) über `/etc/profile` zurücksetzt. Vorher fehlten `python` und `node` (37 Fehlversuche in einem Lauf).
+- Notbremse nach hängendem Abbruch beendet nur den Prozess, das Gespräch ruht und bleibt nutzbar.
+- Antwort: keine Technik der Umgebung (Befehle, Serverpfade, nicht ausführbare Prüfschritte), Dateien als relativer Link.
+- Grenzfalltest der Beta bestanden (Sprache, Ruhen, 10 Runden, drei Tester, Eingaben, Sandbox, Neustart), Skript `betrieb/web-grenzfaelle.py`.
+- Regressionstests: 10 (die neuen scheitern am Stand davor).
 
 ## 0.6.2 (08.11.2026)
 

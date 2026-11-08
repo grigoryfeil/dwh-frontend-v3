@@ -9,11 +9,13 @@ Abgesichert sind die Befunde aus dem Code-Review vom 08.11.2026:
 - Eine Korrektur der Prüfrunde liefert ihre eigene Datei aus.
 - Kopien für den Prüfer und zurück folgen keinem Symlink des Modells.
 - Der Verlaufsvorspann nach einer Pause ist begrenzt, ebenso die Zahl behaltener Gespräche.
+- Hängt eine Runde nach dem Abbruch, beendet die Notbremse nur den Prozess, das Gespräch bleibt nutzbar.
 Aufruf: python3 -m unittest tests/test_web_lebenszyklus.py (braucht starlette und httpx).
 """
 
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
@@ -62,6 +64,7 @@ class Ersatzmodell:
 class Grundlage(unittest.TestCase):
     max_gespraeche = 4
     max_behalten = 24
+    abbruch_frist = 30
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -71,7 +74,8 @@ class Grundlage(unittest.TestCase):
         self.haupt = {"gestartet": 0, "eingaben": []}
         self.pruefer = {"gestartet": 0, "eingaben": []}
         e = web_app.Einstellungen(konten=basis / "konten.json", gespraeche=basis / "gespraeche", hosts=["testserver"],
-                                  sicher=False, max_gespraeche=self.max_gespraeche, max_behalten=self.max_behalten)
+                                  sicher=False, max_gespraeche=self.max_gespraeche, max_behalten=self.max_behalten,
+                                  abbruch_frist=self.abbruch_frist)
         app = web_app.erzeuge(e, gespraech_fabrik=lambda cwd: Ersatzmodell(cwd, self.antwort, self.haupt),
                               pruefer_fabrik=lambda cwd: Ersatzmodell(cwd, self.pruefung, self.pruefer))
         self.c = TestClient(app)
@@ -229,6 +233,52 @@ class Behalten(Grundlage):
         self.frage("Zwei")
         self.frage("Drei")
         self.assertEqual(self.c.get(f"/api/gespraeche/{erste}").status_code, 404)
+
+
+class Haengendes(Ersatzmodell):
+    """Ignoriert den Abbruch und endet erst, wenn der Prozess beendet wird (Notbremse)."""
+
+    def __enter__(self):
+        self.beendet = threading.Event()
+        return super().__enter__()
+
+    def __exit__(self, *_):
+        self.beendet.set()
+        super().__exit__()
+
+    def frage(self, text, beobachter=None):
+        self.protokoll["eingaben"].append(text)
+        if len(self.protokoll["eingaben"]) == 1:
+            self.beendet.wait(5)
+            raise Sitzungsfehler("app-server beendet")
+        return Runde("Antwort nach Notbremse")
+
+
+class Notbremse(Grundlage):
+    abbruch_frist = 0.2
+
+    def setUp(self):
+        super().setUp()  # dann mit eigener Fabrik für das hängende Modell neu aufsetzen
+        e = web_app.Einstellungen(konten=self.basis / "konten.json", gespraeche=self.basis / "gespraeche",
+                                  hosts=["testserver"], sicher=False, abbruch_frist=0.2)
+        self.c = TestClient(web_app.erzeuge(e, gespraech_fabrik=lambda cwd: Haengendes(cwd, None, self.haupt)))
+        self.assertEqual(self.c.post("/api/anmelden", json={"email": "t@x", "passwort": "geheim"}).status_code, 200)
+
+    def test_gespraech_bleibt_nach_notbremse(self):
+        r = self.c.post("/api/fragen", json={"text": "Erste", "gespraech": None, "verifizieren": False,
+                                             "speichern": False})
+        k = r.json()["gespraech"]
+        time.sleep(0.1)
+        self.assertEqual(self.c.post(f"/api/gespraeche/{k}/abbrechen", json={}).status_code, 202)
+        for _ in range(100):
+            stand = self.c.get(f"/api/gespraeche/{k}").json()
+            if stand["status"] != "laeuft":
+                break
+            time.sleep(0.05)
+        self.assertEqual(stand["status"], "fertig")
+        _, stand = self.frage("Zweite", k)
+        self.assertEqual(stand["runden"][-1]["antwort"], "Antwort nach Notbremse")
+        self.assertEqual(self.haupt["gestartet"], 2)
 
 
 if __name__ == "__main__":
