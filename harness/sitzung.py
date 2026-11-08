@@ -48,7 +48,7 @@ class Runde:
 
 
 class Gespraech:
-    def __init__(self, arbeitsverzeichnis, anweisung, modell="gpt-6.1-sol", aufwand="high", zeitlimit=900,
+    def __init__(self, arbeitsverzeichnis, anweisung, modell="gpt-6.1-sol", aufwand="high", zeitlimit=1800,
                  direkt=False):
         self.cwd = str(arbeitsverzeichnis)
         self.anweisung = anweisung
