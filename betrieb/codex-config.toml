@@ -1,0 +1,114 @@
+# Codex-Konfiguration des Modellprozesses von DWH Frontend V3 (codex-home/config.toml, root:dwhv3 0640).
+# Ein Agent: Sol 6.1 mit dem Plugin data-analytics, Daten nur über das Werkzeug sql des MCP-Servers dwh.
+model = "gpt-6.1-sol"
+model_reasoning_effort = "high"
+model_reasoning_summary = "concise"
+forced_login_method = "chatgpt"
+cli_auth_credentials_store = "file"
+default_permissions = "dwhv3"
+web_search = "disabled"
+
+[analytics]
+enabled = false
+
+[history]
+persistence = "none"
+
+# Nichts, was über das ChatGPT-Konto nach außen greift (Konnektoren, Browser, Computer-Use).
+[features]
+apps = false
+browser_use = false
+browser_use_external = false
+browser_use_full_cdp_access = false
+computer_use = false
+in_app_browser = false
+image_generation = false
+tool_suggest = false
+skill_mcp_dependency_install = false
+plugin_sharing = false
+shell_snapshot = false
+
+[skills.bundled]
+enabled = false
+
+[plugins._default]
+enabled = false
+
+[plugins."data-analytics@openai-curated-remote"]
+enabled = true
+
+# Der MCP-Server data des Plugins verbindet externe Konnektoren, hier nicht gebraucht.
+[plugins."data-analytics@openai-curated-remote".mcp_servers.data]
+enabled = false
+
+# Skills des Plugins, die hier ins Leere führen (Veröffentlichen, Zeitpläne, Teilen, Umwandeln, Einrichtung)
+# oder Quellen außerhalb des DWH heranziehen (market-sizing).
+[[skills.config]]
+name = "data-analytics:publish-artifact-to-sites"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:schedule-refresh-jobs"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:share-artifact-summary"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:convert-to-doc"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:convert-to-slides"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:report-to-pdf"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:onboarding"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:customize-data-plugin"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:jupyter-notebooks"
+enabled = false
+
+[[skills.config]]
+name = "data-analytics:market-sizing"
+enabled = false
+
+# Datenzugang: einziges Werkzeug sql über das Lesekonto (nur SELECT). Läuft außerhalb der Shell-Sandbox.
+[mcp_servers.dwh]
+command = "/opt/dwh-frontend-v3/venv/bin/python"
+args = ["-I", "/opt/dwh-frontend-v3/app/harness/sql_werkzeug.py"]
+env = { DWH_OPTIONSDATEI = "/etc/dwh-frontend-v3/dwh-leser.cnf" }
+required = true
+
+# Shell des Modells: liest das System, schreibt nur ins Gesprächsverzeichnis und /tmp, kein Netz,
+# kein Zugriff auf Login, Lesekonto, DB-Socket und andere Gespräche.
+[permissions.dwhv3]
+description = "DWH Frontend V3: Shell ohne Zugangsdaten, Datenbank, Netz und fremde Gespräche."
+
+[permissions.dwhv3.filesystem]
+":root" = "read"
+"/tmp" = "write"
+"/var/lib/dwh-frontend-v3/codex-home/auth.json" = "deny"
+"/var/lib/dwh-frontend-v3/codex-home/cache" = "deny"
+"/var/lib/dwh-frontend-v3/codex-home/log" = "deny"
+"/var/lib/dwh-frontend-v3/codex-home/tmp" = "deny"
+"/var/lib/dwh-frontend-v3/laeufe" = "deny"
+"/etc/dwh-frontend-v3" = "deny"
+"/etc/dwh-frontend-v2-codex" = "deny"
+"/run/dwh-frontend-db" = "deny"
+
+[permissions.dwhv3.filesystem.":workspace_roots"]
+"." = "write"
+
+[permissions.dwhv3.network]
+enabled = false
