@@ -17,6 +17,11 @@ Kein Modellrichter. Je Fall wird die Antwort der letzten gewerteten Runde geprü
                   ein Wert aus `werte_unklar` da (zulässige Aufschlüsselung, nicht die Standardaussage), ist das unklar.
   einschraenkung  jedes Muster in `muster` kommt in der Antwort vor (reguläre Ausdrücke, Groß/klein egal).
   verboten        das Muster kommt nicht vor.
+  dashboard       eine .html-Datei liegt unter den Dateien des Gesprächs (laeufe/<lauf>/dateien-<nr>/), und jeder
+                  Kernwert steht in den eingebetteten Daten (HTML oder mitgelieferte data.json): als Summe eines
+                  Zahlenfelds über die Zeilen, die die Bedingungen einer Variante in `zeilen` erfüllen, bei
+                  `einheit: "%"` auch als Quotient zweier Summen. Steht er nur als lose Zahl da, ist das unklar.
+                  `sekunden_max` gibt nur einen Hinweis zur Laufzeit. Das Rendering prüft der Mensch.
 Ergebnis je Fall: bestanden, verfehlt oder unklar. Unklar heißt: deterministisch nicht entscheidbar, etwa weil das
 Gespräch mit einer Rückfrage endet, abgebrochen ist oder ein Wert nur ohne passenden Kontext vorkommt.
 """
@@ -208,7 +213,171 @@ def zahl_pruefen(p, antwort):
     return "verfehlt", fund
 
 
-def fall_pruefen(fall, gespraeche):
+def schluessel(wert):
+    """Vergleichsform eines Zeilenwerts: klein, nur Buchstaben und Ziffern; die Uhrzeit eines Datums entfällt."""
+    t = str(wert)
+    if re.match(r"\d{4}-\d{2}-\d{2}[T ]", t):
+        t = t[:10]
+    return re.sub(r"[^0-9a-zäöüß]", "", t.lower())
+
+
+def bedingung_erfuellt(zeile, alternativen):
+    """Ein Feld der Zeile hat einen der Werte. Datumsangaben wie 2026 oder 2026-10 gelten als Präfix."""
+    werte = [schluessel(v) for v in zeile.values() if isinstance(v, (str, int)) and not isinstance(v, bool)]
+    for a in alternativen:
+        k, datum = schluessel(a), re.fullmatch(r"\d{4}(-\d{2}){0,2}", str(a))
+        if any(w == k or (datum and w.startswith(k)) for w in werte):
+            return True
+    return False
+
+
+def ist_zahl(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def tabellen(daten, pfad="$"):
+    """(Pfad, Zeilen) je Liste von Objekten in eingebetteten Daten."""
+    if isinstance(daten, dict):
+        for k, v in daten.items():
+            yield from tabellen(v, f"{pfad}.{k}")
+    elif isinstance(daten, list):
+        zeilen = [z for z in daten if isinstance(z, dict)]
+        if zeilen:
+            yield pfad, zeilen
+        for i, v in enumerate(daten):
+            if isinstance(v, (list, dict)):
+                yield from tabellen(v, f"{pfad}[{i}]")
+
+
+def blaetter(daten):
+    if isinstance(daten, dict):
+        daten = list(daten.values())
+    if isinstance(daten, list):
+        for v in daten:
+            yield from blaetter(v)
+    elif ist_zahl(daten):
+        yield daten
+
+
+def html_daten(text):
+    """JSON-Daten einer HTML-Datei und der übrige Text (ohne eingebettete Skriptbündel) für lose Zahlen.
+
+    <script type="application/json">-Blöcke werden einzeln oder, wenn die Daten auf mehrere Blöcke verteilt sind,
+    aufeinanderfolgend zusammengesetzt gelesen. Zusätzlich JSON-Listen von Objekten im übrigen Skripttext."""
+    daten, puffer = [], ""
+    muster = r"<script[^>]*type=[\"']application/json[\"'][^>]*>(.*?)</script>"
+    for koerper in re.findall(muster, text, re.S | re.I):
+        koerper = koerper.replace("<\\/", "</")
+        for kandidat in (puffer + koerper, koerper):
+            try:
+                daten.append(json.loads(kandidat))
+                puffer = ""
+                break
+            except ValueError:
+                pass
+        else:
+            puffer += koerper
+    rest = re.sub(muster, " ", text, flags=re.S | re.I)
+    rest = re.sub(r"data:[\w/+.-]+;base64,[A-Za-z0-9+/=]+", " ", rest)
+    dekoder, pos = json.JSONDecoder(), 0
+    for m in re.finditer(r"\[\s*\{\s*\"", rest):
+        if m.start() < pos:
+            continue
+        try:
+            obj, ende = dekoder.raw_decode(rest, m.start())
+            daten.append(obj)
+            pos = ende
+        except ValueError:
+            pass
+    return daten, rest
+
+
+def dashboard_quellen(ordner, namen):
+    """[(Dateiname, Daten, loser Text)] aus den .html-Dateien und mitgelieferten data.json eines Gesprächs."""
+    quellen = []
+    for n in namen:
+        pfad = ordner / n
+        if not pfad.is_file():
+            continue
+        text = pfad.read_text(encoding="utf-8", errors="replace")
+        if n.lower().endswith((".html", ".htm")):
+            daten, rest = html_daten(text)
+            quellen.append((n, daten, rest))
+        elif Path(n).name == "data.json":
+            try:
+                quellen.append((n, [json.loads(text)], ""))
+            except ValueError:
+                pass
+    return quellen
+
+
+def kernwert_kandidaten(zeilen, anteil):
+    """(Wert, Beschreibung) aus den Zeilen: Summen je Zahlenfeld, bei Anteilen Quotienten, Mittel und Einzelwerte."""
+    summen = {}
+    for z in zeilen:
+        for f, v in z.items():
+            if ist_zahl(v):
+                summen[f] = summen.get(f, 0) + v
+    n = len(zeilen)
+    if not anteil:
+        return [(s, f"Summe {f} über {n} Zeilen") for f, s in summen.items()]
+    kandidaten = [(s / n * 100, f"Mittel {f} über {n} Zeilen × 100") for f, s in summen.items()]
+    kandidaten += [(summen[a] / summen[b] * 100, f"Summe {a} / Summe {b} über {n} Zeilen")
+                   for a in summen for b in summen if a != b and summen[b]]
+    if n == 1:
+        kandidaten += [(s, f"Wert {f}") for f, s in summen.items()]
+    return kandidaten
+
+
+def kernwert_finden(k, quellen):
+    """Sucht einen Kernwert in den Tabellen der Dashboard-Daten. Liefert (ok|unklar|verfehlt, Fundtext)."""
+    varianten = k.get("zeilen") or [[]]
+    anteil = k.get("einheit") == "%"
+    naechste = None
+    for datei, daten, _ in quellen:
+        for pfad, zeilen in tabellen(daten):
+            for variante in varianten:
+                treffer = [z for z in zeilen if all(bedingung_erfuellt(z, b) for b in variante)]
+                if not treffer:
+                    continue
+                kandidaten = kernwert_kandidaten(treffer, anteil)
+                for wert, wie in kandidaten:
+                    if passt(wert, k):
+                        return "ok", f"{wie} = {wert:g} in {datei}, {pfad}"
+                if naechste is None and kandidaten and variante:
+                    nah = ", ".join(f"{wie} = {wert:g}" for wert, wie in kandidaten[:3])
+                    naechste = f"Zeilen zu {' / '.join(b[0] for b in variante)} in {datei}, {pfad}: {nah}"
+    for datei, daten, rest in quellen:
+        lose = list(blaetter(daten)) + [float(z) for z in re.findall(r"(?<![\w.])\d+(?:\.\d+)?(?![\w.])", rest)]
+        for v in lose:
+            if passt(v, k) or (anteil and abs(v) <= 1 and passt(v * 100, k)):
+                return "unklar", f"Wert {v:g} nur als einzelne Zahl ohne passende Zeilen in {datei}"
+    return "verfehlt", naechste or "keine Zeilen zu den Bedingungen in den eingebetteten Daten"
+
+
+def dashboard_pruefen(p, g, runde, basis):
+    """Liefert (Status, Gründe, Hinweise) für die Prüfart dashboard."""
+    hinweise = []
+    if p.get("sekunden_max") and (runde.get("sekunden") or 0) > p["sekunden_max"]:
+        hinweise.append(f"Laufzeit {runde['sekunden']:.0f} s über der Grenze von {p['sekunden_max']} s")
+    namen = g.get("dateien") or []
+    html = [n for n in namen if n.lower().endswith((".html", ".htm"))]
+    if not html:
+        return "verfehlt", ["kein Dashboard: keine .html-Datei unter den Dateien des Gesprächs"], hinweise
+    ordner = basis / f"dateien-{g.get('nummer', 0):02d}"
+    quellen = dashboard_quellen(ordner, html + [n for n in namen if Path(n).name == "data.json"])
+    if not quellen:
+        return "unklar", [f"Dateien des Gesprächs fehlen lokal unter {ordner}"], hinweise
+    status, gruende = "ok", []
+    for k in p["kernwerte"]:
+        ergebnis, fund = kernwert_finden(k, quellen)
+        if ergebnis != "ok":
+            gruende.append(f"{k.get('name', 'Kernwert')}: erwartet {erwartung_text(k)}; {fund}")
+            status = "verfehlt" if ergebnis == "verfehlt" or status == "verfehlt" else "unklar"
+    return status, gruende, hinweise
+
+
+def fall_pruefen(fall, gespraeche, basis=Path(".")):
     g, treffer = gespraech_finden(fall, gespraeche)
     if g is None:
         return {"status": "nicht gelaufen", "gruende": []}
@@ -224,10 +393,16 @@ def fall_pruefen(fall, gespraeche):
     antwort = runde.get("antwort") or ""
     if antwort.lstrip().startswith("[Rückfrage]"):
         return {"status": "unklar", "gruende": [f"Antwort endet mit Rückfrage: {antwort.strip()[:200]}"]}
-    gruende, status = [], "bestanden"
+    gruende, status, hinweise = [], "bestanden", []
     for p in fall["erwartet"]:
         name = p.get("name", p["art"])
-        if p["art"] == "zahl":
+        if p["art"] == "dashboard":
+            ergebnis, mehr, notiz = dashboard_pruefen(p, g, runde, basis)
+            gruende += [f"{name}: {m}" for m in mehr]
+            hinweise += notiz
+            if ergebnis != "ok":
+                status = "verfehlt" if ergebnis == "verfehlt" else (status if status == "verfehlt" else "unklar")
+        elif p["art"] == "zahl":
             ergebnis, fund = zahl_pruefen(p, antwort)
             if ergebnis == "ok":
                 continue
@@ -247,7 +422,7 @@ def fall_pruefen(fall, gespraeche):
                 status = "verfehlt"
         else:
             raise SystemExit(f"Fall {fall['id']}: unbekannte Prüfart {p['art']}")
-    return {"status": status, "gruende": gruende}
+    return {"status": status, "gruende": gruende, "hinweise": hinweise}
 
 
 def bericht(lauf, faelle, ergebnisse, verdeckt=False):
@@ -276,6 +451,12 @@ def bericht(lauf, faelle, ergebnisse, verdeckt=False):
             zeilen.append(f"- **{f['id']}** ({f['rolle']}, {f['thema']}): {frage}")
             zeilen += [f"  - {g}" for g in ergebnisse[f["id"]]["gruende"]]
         zeilen.append("")
+    mit_hinweis = [f for f in faelle if ergebnisse[f["id"]].get("hinweise")]
+    if mit_hinweis:
+        zeilen += ["## Hinweise", "", "Nur zur Kenntnis, kein Einfluss auf das Ergebnis.", ""]
+        zeilen += [f"- **{f['id']}** ({ergebnisse[f['id']]['status']}): {'; '.join(ergebnisse[f['id']]['hinweise'])}"
+                   for f in mit_hinweis]
+        zeilen.append("")
     for status in ("bestanden", "nicht gelaufen"):
         ids = [f["id"] for f in faelle if ergebnisse[f["id"]]["status"] == status]
         if ids:
@@ -301,7 +482,8 @@ def main():
         parser.error("ergebnis.json fehlt")
     lauf = json.loads(Path(args.ergebnis).read_text(encoding="utf-8"))
     faelle = faelle_laden()
-    ergebnisse = {f["id"]: fall_pruefen(f, lauf.get("gespraeche", [])) for f in faelle}
+    basis = Path(args.ergebnis).resolve().parent
+    ergebnisse = {f["id"]: fall_pruefen(f, lauf.get("gespraeche", []), basis) for f in faelle}
     text = bericht(lauf, faelle, ergebnisse, args.verdeckt)
     print(text)
     if args.ausgabe:

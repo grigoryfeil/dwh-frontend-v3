@@ -13,10 +13,46 @@
    "lesart": "Konversion Opportunity zu Enrollment je Intake ab 0325 (0325, 0925, 0326, 0926; 0327 läuft noch), regional, jeweils am letzten Wochenstand bis zum Census Date. Mehrere Abgrenzungen sind vertretbar (Bulletin: Kern-Enrollments durch alle Opportunities; Katalog: gleiche Produktkategorie; Konzern-Cockpit: enrolled durch interviewed). Entscheidend ist, dass die Grenze von dashboard_opps (erst ab 0326) nicht als Grenze der Frage ausgegeben wird.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Rate 0325", "bereich": [17.0, 21.0], "einheit": "%", "kontext": "0325|03/25|25T2|März 2025|Frühjahr 2025|Spring 2025|SS 2025|Sommersemester 2025"},
-    {"art": "zahl", "name": "Rate 0925", "bereich": [20.5, 24.5], "einheit": "%", "kontext": "0925|09/25|25T3|September 2025|Herbst 2025|Fall 2025|WS 2025|Wintersemester 2025|2025/26"},
-    {"art": "zahl", "name": "Rate 0326", "bereich": [16.5, 20.0], "einheit": "%", "kontext": "0326|03/26|26T2|März 2026|Frühjahr 2026|Spring 2026|SS 2026|Sommersemester 2026"},
-    {"art": "zahl", "name": "Rate 0926", "bereich": [17.0, 22.6], "einheit": "%", "kontext": "0926|09/26|26T3|September 2026|Herbst 2026|Fall 2026|WS 2026|Wintersemester 2026|2026/27"}
+    {
+     "art": "zahl",
+     "name": "Rate 0325",
+     "bereich": [
+      17.0,
+      21.0
+     ],
+     "einheit": "%",
+     "kontext": "0325|03/25|25T2|März 2025|Frühjahr 2025|Spring 2025|SS 2025|Sommersemester 2025"
+    },
+    {
+     "art": "zahl",
+     "name": "Rate 0925",
+     "bereich": [
+      20.5,
+      24.5
+     ],
+     "einheit": "%",
+     "kontext": "0925|09/25|25T3|September 2025|Herbst 2025|Fall 2025|WS 2025|Wintersemester 2025|2025/26"
+    },
+    {
+     "art": "zahl",
+     "name": "Rate 0326",
+     "bereich": [
+      16.5,
+      20.0
+     ],
+     "einheit": "%",
+     "kontext": "0326|03/26|26T2|März 2026|Frühjahr 2026|Spring 2026|SS 2026|Sommersemester 2026"
+    },
+    {
+     "art": "zahl",
+     "name": "Rate 0926",
+     "bereich": [
+      17.0,
+      22.6
+     ],
+     "einheit": "%",
+     "kontext": "0926|09/26|26T3|September 2026|Herbst 2026|Fall 2026|WS 2026|Wintersemester 2026|2026/27"
+    }
    ],
    "quelle": "Weekly Marketing & Sales Bulletin (Basecamp GSAN Marketing & Sales, Leitung Marketing & Sales): 21.09.2026 je Campus Opportunities und Enrollments 926, Regionssumme 1.012 von 5.885 = 17,2 %; Größenordnungen 0926 17,2 bis 17,6 %, 0925 21,6 % (SAE-Wissen FUN-046, FUN-047). Rohauszug ~/firmenbild-scan/claude/pcp/bc-10322911848.txt.",
    "nachvollzogen": "Auf der Kopie: cockpit_l2e_parts (view_type Funnel, letzter reporting_date je Intake, Summe enrolled durch Summe interviewed): 0325 633/3531 = 17,9 % (23.03.2025), 0925 1050/4916 = 21,4 % (21.09.2025), 0326 550/3114 = 17,7 % (29.03.2026), 0926 897/4828 = 18,6 % (20.09.2026). dashboard_opps: 0926 am 20.09.2026 Kern-Enrollments 1.015 durch alle Opportunities 5.771 = 17,6 % (passt zum Bulletin), Kern durch Kern 1.015/5.027 = 20,2 %, alle durch alle 22,5 %; 0326 am 29.03.2026 Kern/Kern 480/2.648 = 18,1 %, am 15.03. 575/2.934 = 19,6 %. kpis_opps 25T3 am 21.09.2025: 1.296/5.387 = 24,1 % (alle Produkte). Die Bereiche umfassen diese Lesarten. sales_cohort_persons taugt nicht: Kohorten 0326/0926 mit doppelt so vielen Opportunities wie die Stichtagsquellen (0926 22.848 Personen).",
@@ -33,10 +69,40 @@
    "lesart": "Eingeschriebene Opportunities (num_converted) in Kernprodukten für Intake 0327 am Wochenstand 01.11.2026, je Campus und Region einschließlich Genf, wie im Weekly Bulletin vom 02.11.2026.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Region", "bereich": [124, 127], "kontext": "gesamt|Region|insgesamt|Summe|alle|zusammen"},
-    {"art": "zahl", "name": "Berlin", "werte": [20], "kontext": "Berlin|BER"},
-    {"art": "zahl", "name": "Zürich", "werte": [18], "kontext": "Zürich|Zurich|ZRH"},
-    {"art": "zahl", "name": "Wien", "werte": [11, 12], "kontext": "Wien|Vienna|VIE"}
+    {
+     "art": "zahl",
+     "name": "Region",
+     "bereich": [
+      124,
+      127
+     ],
+     "kontext": "gesamt|Region|insgesamt|Summe|alle|zusammen"
+    },
+    {
+     "art": "zahl",
+     "name": "Berlin",
+     "werte": [
+      20
+     ],
+     "kontext": "Berlin|BER"
+    },
+    {
+     "art": "zahl",
+     "name": "Zürich",
+     "werte": [
+      18
+     ],
+     "kontext": "Zürich|Zurich|ZRH"
+    },
+    {
+     "art": "zahl",
+     "name": "Wien",
+     "werte": [
+      11,
+      12
+     ],
+     "kontext": "Wien|Vienna|VIE"
+    }
    ],
    "quelle": "Weekly Marketing & Sales Bulletin vom 02.11.2026 (Stichtag Sonntag 01.11.2026), Abschnitt Enrollments 327 je Campus: AMS 6, BER 20, BO 6, COL 8, FFM 14, GVA 0, HAN 3, HH 11, LEI 7, MUC 10, NBG 4, STU 7, VIE 11, ZRH 18, Summe 125. Rohauszug bc-10465381052.txt. Gegenprobe: Goals-Sheet „2027 - Goals - Intake 0327“, Blatt 2026-11-01, Study (inkl. Top-ups) 132.",
    "nachvollzogen": "dashboard_opps, intake 0327, key_date 2026-11-01, product_category Core, Summe num_converted je campus_code: 13 von 14 Campus identisch mit dem Bulletin, Wien 12 statt 11, Region 126. Mit Top-ups 133, passt zum Goals-Sheet (132).",
@@ -49,13 +115,37 @@
    "rolle": "entwicklung",
    "fragen": [
     "Wie viele Neueinschreibungen hatten wir zum letzten Wintersemester, und wie ist das im Vergleich zum Vorjahr?",
-    {"falls_rueckfrage": "Ja, genau so."}
+    {
+     "falls_rueckfrage": "Ja, genau so."
+    }
    ],
    "lesart": "Neueinschreibungen nach Kennzahlen v4 der Leitung BI: CAS-Verträge (netto), die über das Census Date hinaus bestehen, Herbstintake 2026 gegen 2025 (August- bis Oktoberstarts), Kern und gesamt (Kern, Top-up, Master), ohne Media University; Genf zählt für beide Intakes mit, weil der Studienstart vor dem 01.10.2026 liegt. Kommt eine Rückfrage, bestätigt der Nutzer die Empfehlung (Herbst 2026 gegen Herbst 2025) mit „Ja, genau so.“.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Herbst 2026", "werte": [1028, 1147, 976, 1095], "toleranz": 3, "kontext": "2026|0926|aktuell|letzte"},
-    {"art": "zahl", "name": "Herbst 2025", "werte": [1335, 1449, 1257, 1371], "toleranz": 3, "kontext": "2025|0925|Vorjahr"}
+    {
+     "art": "zahl",
+     "name": "Herbst 2026",
+     "werte": [
+      1028,
+      1147,
+      976,
+      1095
+     ],
+     "toleranz": 3,
+     "kontext": "2026|0926|aktuell|letzte"
+    },
+    {
+     "art": "zahl",
+     "name": "Herbst 2025",
+     "werte": [
+      1335,
+      1449,
+      1257,
+      1371
+     ],
+     "toleranz": 3,
+     "kontext": "2025|0925|Vorjahr"
+    }
    ],
    "quelle": "Definition: Objektindex 08b, Blatt Kennzahlen v4 (Leitung BI, 02.11.2026), K2 Neueinschreibungen. Gegenprobe ohne Zahlengleichheit: Goals-Sheet „2026 - Goals - Intake 0926“ (Salesforce, Study inkl. Top-ups und Master) 1.124 am 20.09.2026, 1.087 am 25.10.2026.",
    "nachvollzogen": "v_sales_prediction_data, enrollment_type netto, exit_date leer oder nach study_period_census (ersatzweise Start plus 14 Tage), start_month 2026-08 bis 2026-10 gegen 2025-08 bis 2025-10: Core 1.028 gegen 1.335, Top-up 104 gegen 95, Master 15 gegen 19, gesamt 1.147 gegen 1.449. Ohne Genf (heutiger Standortkreis) Kern 976 gegen 1.257, gesamt 1.095 gegen 1.371, als zweite Lesart zugelassen. Salesforce-Stand im Goals-Sheet liegt 2 % unter CAS, im Rahmen des SF/CAS-Vergleichsberichts (98,5 % Übereinstimmung bis auf eine Einschreibung).",
@@ -73,8 +163,23 @@
    "lesart": "Headcount nach Kennzahlen v4: Summe StudentStatistics.Heads am jüngsten Monatsstichtag 25.10.2026 einschließlich DUO, ohne Genf (seit Oktober 2026 nicht mehr Region), Vergleich mit 25.10.2025 im heutigen Standortkreis oder im damaligen Regionsbestand mit Genf.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Bestand 25.10.2026", "werte": [3458], "kontext": "2026|heute|aktuell"},
-    {"art": "zahl", "name": "Bestand 25.10.2025", "werte": [3850, 4050], "kontext": "2025|Vorjahr|vor einem Jahr|damals"}
+    {
+     "art": "zahl",
+     "name": "Bestand 25.10.2026",
+     "werte": [
+      3458
+     ],
+     "kontext": "2026|heute|aktuell"
+    },
+    {
+     "art": "zahl",
+     "name": "Bestand 25.10.2025",
+     "werte": [
+      3850,
+      4050
+     ],
+     "kontext": "2025|Vorjahr|vor einem Jahr|damals"
+    }
    ],
    "quelle": "Definition: Objektindex 08b, Blatt Kennzahlen v4 (Leitung BI, 02.11.2026), K3 Headcount. Ein Bestandsbericht mit Zahlen war in Drive und Gmail nicht lesbar (Headcount-Report nur als Mail-Anhang).",
    "nachvollzogen": "StudentStatistics, Summe Heads: 25.10.2026 3.634 mit Genf, 3.458 ohne Genf; 25.10.2025 4.050 mit Genf, 3.850 ohne Genf. Nachgerechnete Referenz ohne unabhängige Berichtszahl.",
@@ -91,8 +196,25 @@
    "lesart": "Neue Leads nach First-Touch-Quelle (Leads_First_Touch_Lead_Source), Erstellungstag 01.01. bis 05.11.2026 (letzter Tag in der Kopie), nur SAE-Präsenzstandorte, Genf bis 30.09.2026. Mit Genf über das ganze Jahr ebenfalls zulässig.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Leads seit Jahresbeginn", "werte": [47675, 47772], "toleranz_rel": 0.003},
-    {"art": "zahl", "name": "Facebook", "werte": [18056, 18062], "toleranz": 2, "kontext": "facebook|Meta"}
+    {
+     "art": "zahl",
+     "name": "Leads seit Jahresbeginn",
+     "werte": [
+      47675,
+      47772
+     ],
+     "toleranz_rel": 0.003
+    },
+    {
+     "art": "zahl",
+     "name": "Facebook",
+     "werte": [
+      18056,
+      18062
+     ],
+     "toleranz": 2,
+     "kontext": "facebook|Meta"
+    }
    ],
    "quelle": "Definition: V2-Katalog v7 kk.leads mit Objektindex 08b (Leitung BI). Plausibilisierung: Weekly Bulletin 02.11.2026, Leads je Campus seit Jahresbeginn gegen Vorjahr (siehe R-L03).",
    "nachvollzogen": "Summe Leads 01.01. bis 05.11.2026: 47.772 mit Genf, 47.675 mit Genf nur bis 30.09.; facebook 18.062 bzw. 18.056. Im Jahr 2026 fehlen sechs Tage (24. bis 26.04., 21.05., 06.06. und ein Tag im Februar 2025), eine Nennung ist erwünscht, wird aber nicht geprüft.",
@@ -109,9 +231,33 @@
    "lesart": "Neue Leads Bochum, Erstellungstag 01.01. bis 01.11.2026 gegen 01.01. bis 01.11.2025 (Bulletin: PCP für Leads = Kalenderjahr bis heute gegen Vorjahreszeitraum).",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Veränderung", "bereich": [19.5, 22.0], "einheit": "%"},
-    {"art": "zahl", "name": "Leads 2026", "werte": [2437], "toleranz": 5, "kontext": "2026|dieses Jahr|aktuell|bisher"},
-    {"art": "zahl", "name": "Leads 2025", "werte": [2019], "toleranz": 3, "kontext": "2025|Vorjahr"}
+    {
+     "art": "zahl",
+     "name": "Veränderung",
+     "bereich": [
+      19.5,
+      22.0
+     ],
+     "einheit": "%"
+    },
+    {
+     "art": "zahl",
+     "name": "Leads 2026",
+     "werte": [
+      2437
+     ],
+     "toleranz": 5,
+     "kontext": "2026|dieses Jahr|aktuell|bisher"
+    },
+    {
+     "art": "zahl",
+     "name": "Leads 2025",
+     "werte": [
+      2019
+     ],
+     "toleranz": 3,
+     "kontext": "2025|Vorjahr"
+    }
    ],
    "quelle": "Weekly Marketing & Sales Bulletin vom 02.11.2026, BO: „Im Vergleich zum Vorjahr (Jahresbeginn bis heute) liegen wir bei +21%“. Rohauszug bc-10465381052.txt.",
    "nachvollzogen": "Leads_First_Touch_Lead_Source, Campus SAE Bochum: 2.437 gegen 2.019, +20,7 %. Über alle Campus weichen Kopie und Bulletin um höchstens 3 Prozentpunkte ab (Amsterdam, Bochum, Nürnberg gleich).",
@@ -124,12 +270,25 @@
    "rolle": "entwicklung",
    "fragen": [
     "Wie hoch ist die Abbruchquote im Bachelor?",
-    {"falls_rueckfrage": "Ja."}
+    {
+     "falls_rueckfrage": "Ja."
+    }
    ],
    "lesart": "Abbruchquote nach Kennzahlen v4 und Dashboard „Student Outcomes – Cohort View“: Terminations (aktive Vertragsbeendigung) geteilt durch alle Personen der reifen Eintrittskohorten ab 2018_H1, zusammengefasst, Programm BA (Hons), alle Standorte. Das ist die Standardaussage ohne Zeitangabe. Die jüngste reife Kohorte (2023_H1, 28,9 %) ist eine zulässige Aufschlüsselung und ergibt allein unklar. Einschluss der Kohorten 2016 und 2017 (26,3 %) weicht von der Achse des Dashboards ab und gilt als verfehlt. Kommt eine Rückfrage, antwortet der Nutzer „Ja.“; die Erwartung hängt nicht von der Empfehlung des Analysten ab.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Abbruchquote BA, reife Kohorten ab 2018_H1", "werte": [30.2], "toleranz": 0.1, "einheit": "%", "werte_unklar": [28.9]}
+    {
+     "art": "zahl",
+     "name": "Abbruchquote BA, reife Kohorten ab 2018_H1",
+     "werte": [
+      30.2
+     ],
+     "toleranz": 0.1,
+     "einheit": "%",
+     "werte_unklar": [
+      28.9
+     ]
+    }
    ],
    "quelle": "Data-Studio-Dashboard „Student Outcomes – Cohort View“, Eva Elliott, Datenstand 26.10.2026 (https://datastudio.google.com/u/0/reporting/a20ae255-9c65-4f97-a7af-7c4e00c47152), Filter Programm BA (Hons): Terminations (Mature) 30,2 %; reif heißt mindestens 95 % der Kohorte abgeschlossen, Kohortenachse ab 2018_H1. Abgelesen von der Steuersession am 08.11.2026. Definition: Objektindex 08b, Blatt Kennzahlen v4, K6.",
    "nachvollzogen": "Geändert am 08.11.2026 auf Grundlage des Dashboards als unabhängiger SAE-Quelle, nicht wegen eines Laufergebnisses. Vorher erwartet: jüngste reife Kohorte 28,9 % oder 2022_H2 30,0 %, ohne Berichtsbeleg. obt_outcomes, is_mature = 1, program BA (Hons), period_key ab 2018: 1.299 von 4.299 = 30,2 %, identisch mit dem Dashboard; v_obt_outcomes gleich. Mit 2016 und 2017: 26,3 %. Kohorte 2023_H1: 94 von 325 = 28,9 %. Die übrigen Kopfwerte des Dashboards für BA (Original Award 45,2 %, End without Award 4,7 %, Effective Award 63,8 % gegen 63,85 % auf der Kopie) stimmen ebenfalls.",
@@ -146,8 +305,25 @@
    "lesart": "Outcome-Quoten der reifen Eintrittskohorten ab 2018_H1, Programm BA (Hons): Effective Award (irgendein Abschluss, auch nach Downgrade) und Original Award (der ursprünglich angestrebte Abschluss), wie im Dashboard „Student Outcomes – Cohort View“.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Effective Award BA", "werte": [63.8, 63.9], "toleranz": 0.05, "einheit": "%"},
-    {"art": "zahl", "name": "Original Award BA", "werte": [45.2], "toleranz": 0.1, "einheit": "%"}
+    {
+     "art": "zahl",
+     "name": "Effective Award BA",
+     "werte": [
+      63.8,
+      63.9
+     ],
+     "toleranz": 0.05,
+     "einheit": "%"
+    },
+    {
+     "art": "zahl",
+     "name": "Original Award BA",
+     "werte": [
+      45.2
+     ],
+     "toleranz": 0.1,
+     "einheit": "%"
+    }
    ],
    "quelle": "Data-Studio-Dashboard „Student Outcomes – Cohort View“, Eva Elliott, Datenstand 26.10.2026, Filter BA (Hons): Effective Award 63,8 %, Original Award 45,2 %. Abgelesen von der Steuersession am 08.11.2026.",
    "nachvollzogen": "obt_outcomes, is_mature = 1, program BA (Hons), period_key ab 2018: effective_award 2.745 von 4.299 = 63,85 % (Dashboard zeigt 63,8, deshalb 63,8 und 63,9 zulässig), original_award 45,2 %. Downgrades 18,4 % machen den Unterschied.",
@@ -164,8 +340,23 @@
    "lesart": "Weiterempfehlung nach Kennzahlen v4: Anteil Ja-Antworten in der jüngsten Welle (August 2026), Region, dazu Durchschnitt der Einzelfragen und Zahl der Antworten.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Weiterempfehlung August 2026", "werte": [81.7], "toleranz": 0.1, "einheit": "%"},
-    {"art": "zahl", "name": "Antworten", "werte": [847], "kontext": "Antwort|Teilnehm|Befragt|Rückmeld|n ?="}
+    {
+     "art": "zahl",
+     "name": "Weiterempfehlung August 2026",
+     "werte": [
+      81.7
+     ],
+     "toleranz": 0.1,
+     "einheit": "%"
+    },
+    {
+     "art": "zahl",
+     "name": "Antworten",
+     "werte": [
+      847
+     ],
+     "kontext": "Antwort|Teilnehm|Befragt|Rückmeld|n ?="
+    }
    ],
    "quelle": "Semesterumfrage-GSAN-Bericht August 2026 (Final), Leiter BI und BI-Team, 30.08.2026, Drive-ID 1SlXPCcuwTNdElUx86ucuuLRF_o2Jff3K: S. 3 und S. 9 Weiterempfehlung 81,7 % (März 82,3 %), S. 3 Fragendurchschnitt 3,86, Deckblatt 847 Antworten.",
    "nachvollzogen": "survey_student_semester, survey_wave August 2026: 847 Antworten, Mittel rating_would_recommend 81,70 %; Mittel über alle Einzelbewertungen der elf Items 3,859. Alles identisch mit dem Bericht.",
@@ -182,9 +373,33 @@
    "lesart": "Zeitreihe der Weiterempfehlung je Welle. Die Semesterumfrage gibt es erst seit März 2023, für 2021 und 2022 liegen keine Werte vor. Erwartet sind die vorhandenen Wellen und die benannte Grenze.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "einschraenkung", "name": "Beginn 2023 benannt", "muster": ["(seit|ab|erst|beginn|startet|gibt es|erste|liegen).{0,60}(März 2023|2023)|(2021|2022).{0,80}(kein|nicht|fehl)"]},
-    {"art": "zahl", "name": "Erste Wellen 2023", "bereich": [71.0, 72.0], "einheit": "%", "kontext": "2023"},
-    {"art": "zahl", "name": "August 2026", "werte": [81.7], "toleranz": 0.1, "einheit": "%", "kontext": "2026"}
+    {
+     "art": "einschraenkung",
+     "name": "Beginn 2023 benannt",
+     "muster": [
+      "(seit|ab|erst|beginn|startet|gibt es|erste|liegen).{0,60}(März 2023|2023)|(2021|2022).{0,80}(kein|nicht|fehl)"
+     ]
+    },
+    {
+     "art": "zahl",
+     "name": "Erste Wellen 2023",
+     "bereich": [
+      71.0,
+      72.0
+     ],
+     "einheit": "%",
+     "kontext": "2023"
+    },
+    {
+     "art": "zahl",
+     "name": "August 2026",
+     "werte": [
+      81.7
+     ],
+     "toleranz": 0.1,
+     "einheit": "%",
+     "kontext": "2026"
+    }
    ],
    "quelle": "Semesterumfrage-GSAN-Bericht August 2026 (Final): Zeitreihe, September 2023 rund 72 %, seit September 2024 Plateau um 82 %. SAE-Wissen UMF-002: zentrales Instrument seit März 2023.",
    "nachvollzogen": "survey_student_semester: acht Wellen März 2023 (71,3 %, n 984) bis August 2026 (81,7 %); September 2023 71,7 %. Keine Welle vor März 2023.",
@@ -201,7 +416,16 @@
    "lesart": "Weiterempfehlung je Standort, Welle August 2026, nur Standorte mit mindestens 10 Antworten (Ausweisungsregel des Berichts und von Kennzahlen v4). Ohne die Regel führten DUO (2 Antworten) oder Genf-artige Kleinstgruppen.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "zahl", "name": "Bochum", "werte": [94.7], "toleranz": 0.1, "einheit": "%", "kontext": "Bochum|BO\\b"}
+    {
+     "art": "zahl",
+     "name": "Bochum",
+     "werte": [
+      94.7
+     ],
+     "toleranz": 0.1,
+     "einheit": "%",
+     "kontext": "Bochum|BO\\b"
+    }
    ],
    "quelle": "Semesterumfrage-GSAN-Bericht August 2026 (Final), S. 25 Tabelle Kapitel 08: Bochum 94,7 % (n 19), Nürnberg 93,8 % (n 32).",
    "nachvollzogen": "survey_student_semester, August 2026, je campus_code: BO 94,7 % (19), NUE 93,8 % (32), DUO 100 % (2), GVA 66,7 % (3), AMS 77,8 % (9). Identisch mit dem Bericht.",
@@ -218,12 +442,335 @@
    "lesart": "Im DWH gibt es keine Dozentenbefragung und keine Personal- oder Vergütungsdaten. Erwartet ist die klare Aussage, dass die Frage mit den Daten nicht beantwortbar ist, ohne Ersatzzahl.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
-    {"art": "einschraenkung", "name": "Nicht beantwortbar", "muster": ["(nicht|keine).{0,80}(Daten|Befragung|beurteil|bestimm|erfasst|vorhanden|beantwort)"]},
-    {"art": "verboten", "name": "Ersatzzahl zur Zufriedenheit", "muster": "[0-9]+([,.][0-9]+)? ?%.{0,60}(Dozent|Lehrend)|(Dozent|Lehrend).{0,60}[0-9]+([,.][0-9]+)? ?%"}
+    {
+     "art": "einschraenkung",
+     "name": "Nicht beantwortbar",
+     "muster": [
+      "(nicht|keine).{0,80}(Daten|Befragung|beurteil|bestimm|erfasst|vorhanden|beantwort)"
+     ]
+    },
+    {
+     "art": "verboten",
+     "name": "Ersatzzahl zur Zufriedenheit",
+     "muster": "[0-9]+([,.][0-9]+)? ?%.{0,60}(Dozent|Lehrend)|(Dozent|Lehrend).{0,60}[0-9]+([,.][0-9]+)? ?%"
+    }
    ],
    "quelle": "SAE-Wissen SYS-005 (Finanz- und Personaldaten nicht im DWH); Tabellenliste der Kopie.",
    "nachvollzogen": "Tabellenliste von b_20261106t180757z_sooc: keine Tabelle mit Dozenten-, Personal- oder Vergütungsbezug; survey_student_semester befragt Studierende.",
    "sicherheit": "hoch"
+  },
+  {
+   "id": "R-B04",
+   "thema": "bestand",
+   "art": "dashboard",
+   "rolle": "entwicklung",
+   "fragen": [
+    "Baue ein Dashboard zum Studierendenbestand: Entwicklung der letzten zwei Jahre, aufgeschlüsselt nach Campus und Fachbereich.",
+    {
+     "falls_rueckfrage": "Ja."
+    }
+   ],
+   "lesart": "Headcount nach Kennzahlen v4 als Monatsreihe aus StudentStatistics (Stichtag jeweils der 25.) von Oktober 2024 bis Oktober 2026, je Campus und Fachbereich, einschließlich DUO. Genf (seit Oktober 2026 nicht mehr Region) darf im jüngsten Stand fehlen oder enthalten sein, der Anfang der Reihe darf Oktober oder November 2024 sein. Kernwerte müssen sich aus den eingebetteten Daten summieren lassen.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {
+     "art": "dashboard",
+     "name": "Dashboard Bestand",
+     "sekunden_max": 600,
+     "kernwerte": [
+      {
+       "name": "Bestand Oktober 2026",
+       "werte": [
+        3458,
+        3634
+       ],
+       "zeilen": [
+        [
+         [
+          "2026-10"
+         ]
+        ]
+       ]
+      },
+      {
+       "name": "Bestand Anfang der Reihe",
+       "werte": [
+        4066,
+        4306,
+        4007,
+        4244
+       ],
+       "zeilen": [
+        [
+         [
+          "2024-10"
+         ]
+        ],
+        [
+         [
+          "2024-11"
+         ]
+        ]
+       ]
+      },
+      {
+       "name": "Bochum Oktober 2026",
+       "werte": [
+        135
+       ],
+       "zeilen": [
+        [
+         [
+          "2026-10"
+         ],
+         [
+          "BO",
+          "Bochum",
+          "SAE Bochum"
+         ]
+        ]
+       ]
+      },
+      {
+       "name": "Audio Engineering Oktober 2026",
+       "werte": [
+        1047,
+        1105
+       ],
+       "zeilen": [
+        [
+         [
+          "2026-10"
+         ],
+         [
+          "Audio Engineering"
+         ]
+        ]
+       ]
+      }
+     ]
+    }
+   ],
+   "quelle": "Definition: Objektindex 08b, Blatt Kennzahlen v4 (Leitung BI, 02.11.2026), K3 Headcount; dieselben Werte wie R-B01. Kein Bestandsbericht mit Zahlen lesbar. Frage aus der Dashboard-Probe der Steuersession, Lauf 20261108-165804.",
+   "nachvollzogen": "StudentStatistics, Summe Heads: 25.10.2026 3.634 mit Genf, 3.458 ohne; 25.10.2024 4.306 mit Genf, 4.066 ohne; 25.11.2024 4.244 bzw. 4.007; Bochum 25.10.2026 135; Audio Engineering 25.10.2026 1.105 mit Genf, 1.047 ohne. Nachgerechnete Referenz.",
+   "sicherheit": "mittel: Rechnung eindeutig, Berichtsbeleg fehlt"
+  },
+  {
+   "id": "R-A05",
+   "thema": "abbruch",
+   "art": "dashboard",
+   "rolle": "entwicklung",
+   "fragen": [
+    "Baue ein Dashboard zum Studienerfolg nach Eintrittskohorten: Abbruch-, Abschluss- und Nichtabschlussquoten, filterbar nach Programm und Campus.",
+    {
+     "falls_rueckfrage": "Ja."
+    }
+   ],
+   "lesart": "Wie das Dashboard „Student Outcomes – Cohort View“: reife Eintrittskohorten (mindestens 95 % abgeschlossen) ab 2018_H1 aus obt_outcomes, Quoten je Outcome. Kernwerte: Terminations BA (Hons) 30,2 %, Effective Award BA 63,8 %, Terminations alle Programme ohne Certificates 28,5 %. Geprüft wird, ob sich die Quoten aus den eingebetteten Zählungen (Summe Abbrüche durch Summe Personen) oder aus Einzelwerten ergeben. Enthält das Dashboard zusätzlich 2016 und 2017 oder unreife Kohorten, muss die Standardabgrenzung über die Kohortenwerte herstellbar sein.",
+   "datenstand": "b_20261106t180757z_sooc",
+   "erwartet": [
+    {
+     "art": "dashboard",
+     "name": "Dashboard Studienerfolg",
+     "sekunden_max": 600,
+     "kernwerte": [
+      {
+       "name": "Terminations BA (Hons)",
+       "werte": [
+        30.2
+       ],
+       "toleranz": 0.1,
+       "einheit": "%",
+       "zeilen": [
+        [
+         [
+          "2018_H1",
+          "2018_H2",
+          "2019_H1",
+          "2019_H2",
+          "2020_H1",
+          "2020_H2",
+          "2021_H1",
+          "2021_H2",
+          "2022_H1",
+          "2022_H2",
+          "2023_H1",
+          "H1 2018",
+          "H2 2018",
+          "H1 2019",
+          "H2 2019",
+          "H1 2020",
+          "H2 2020",
+          "H1 2021",
+          "H2 2021",
+          "H1 2022",
+          "H2 2022",
+          "H1 2023"
+         ],
+         [
+          "BA (Hons)",
+          "BA",
+          "Bachelor"
+         ]
+        ],
+        [
+         [
+          "BA (Hons)",
+          "BA",
+          "Bachelor"
+         ]
+        ]
+       ]
+      },
+      {
+       "name": "Effective Award BA (Hons)",
+       "werte": [
+        63.8
+       ],
+       "toleranz": 0.1,
+       "einheit": "%",
+       "zeilen": [
+        [
+         [
+          "2018_H1",
+          "2018_H2",
+          "2019_H1",
+          "2019_H2",
+          "2020_H1",
+          "2020_H2",
+          "2021_H1",
+          "2021_H2",
+          "2022_H1",
+          "2022_H2",
+          "2023_H1",
+          "H1 2018",
+          "H2 2018",
+          "H1 2019",
+          "H2 2019",
+          "H1 2020",
+          "H2 2020",
+          "H1 2021",
+          "H2 2021",
+          "H1 2022",
+          "H2 2022",
+          "H1 2023"
+         ],
+         [
+          "BA (Hons)",
+          "BA",
+          "Bachelor"
+         ]
+        ],
+        [
+         [
+          "BA (Hons)",
+          "BA",
+          "Bachelor"
+         ]
+        ]
+       ]
+      },
+      {
+       "name": "Terminations alle Programme ohne Certificates",
+       "werte": [
+        28.5
+       ],
+       "toleranz": 0.1,
+       "einheit": "%",
+       "zeilen": [
+        [
+         [
+          "2018_H1",
+          "2018_H2",
+          "2019_H1",
+          "2019_H2",
+          "2020_H1",
+          "2020_H2",
+          "2021_H1",
+          "2021_H2",
+          "2022_H1",
+          "2022_H2",
+          "2023_H1",
+          "H1 2018",
+          "H2 2018",
+          "H1 2019",
+          "H2 2019",
+          "H1 2020",
+          "H2 2020",
+          "H1 2021",
+          "H2 2021",
+          "H1 2022",
+          "H2 2022",
+          "H1 2023"
+         ],
+         [
+          "BA (Hons)",
+          "BA",
+          "Bachelor",
+          "Diploma",
+          "Advanced Diploma",
+          "Professional Diploma",
+          "MA",
+          "Master"
+         ]
+        ],
+        [
+         [
+          "2018_H1",
+          "2018_H2",
+          "2019_H1",
+          "2019_H2",
+          "2020_H1",
+          "2020_H2",
+          "2021_H1",
+          "2021_H2",
+          "2022_H1",
+          "2022_H2",
+          "2023_H1",
+          "H1 2018",
+          "H2 2018",
+          "H1 2019",
+          "H2 2019",
+          "H1 2020",
+          "H2 2020",
+          "H1 2021",
+          "H2 2021",
+          "H1 2022",
+          "H2 2022",
+          "H1 2023"
+         ]
+        ],
+        [
+         [
+          "BA (Hons)",
+          "BA",
+          "Bachelor",
+          "Diploma",
+          "Advanced Diploma",
+          "Professional Diploma",
+          "MA",
+          "Master"
+         ]
+        ],
+        [
+         [
+          "Alle Programme",
+          "Alle",
+          "All",
+          "All programmes",
+          "Gesamt",
+          "Total"
+         ]
+        ],
+        []
+       ]
+      }
+     ]
+    }
+   ],
+   "quelle": "Data-Studio-Dashboard „Student Outcomes – Cohort View“, Eva Elliott, Datenstand 26.10.2026 (https://datastudio.google.com/u/0/reporting/a20ae255-9c65-4f97-a7af-7c4e00c47152): BA Terminations 30,2 %, Effective Award 63,8 %; alle Programme Terminations 28,5 %. Abgelesen von der Steuersession am 08.11.2026.",
+   "nachvollzogen": "obt_outcomes, is_mature = 1, period_key ab 2018: BA (Hons) 1.299 Terminations von 4.299 = 30,22 %, Effective Award 63,85 %; ohne Certificates 2.785 von 9.774 = 28,49 %. Identisch mit dem Dashboard (siehe R-A01 bis R-A04).",
+   "sicherheit": "hoch für die Werte; die Prüfung erkennt Quoten nur aus Zählungen, Flags je Person oder Einzelwerten"
   }
  ]
 }

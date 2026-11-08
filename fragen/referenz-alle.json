@@ -44,6 +44,18 @@
   "Wie zufrieden sind unsere Dozenten mit ihrer Bezahlung?"
  ],
  [
+  "Baue ein Dashboard zum Studierendenbestand: Entwicklung der letzten zwei Jahre, aufgeschlüsselt nach Campus und Fachbereich.",
+  {
+   "falls_rueckfrage": "Ja."
+  }
+ ],
+ [
+  "Baue ein Dashboard zum Studienerfolg nach Eintrittskohorten: Abbruch-, Abschluss- und Nichtabschlussquoten, filterbar nach Programm und Campus.",
+  {
+   "falls_rueckfrage": "Ja."
+  }
+ ],
+ [
   "Wie hoch war die Conversion Rate von Opportunities zu Enrollments im Intake 0926, so wie das Weekly Bulletin sie rechnet?"
  ],
  [
@@ -78,5 +90,11 @@
  ],
  [
   "Wie hoch waren die Personalkosten je Campus im letzten Geschäftsjahr?"
+ ],
+ [
+  "Erstelle ein Dashboard zu unseren Leads in diesem Jahr: monatlicher Verlauf, filterbar nach Campus und Leadquelle.",
+  {
+   "falls_rueckfrage": "Ja."
+  }
  ]
 ]
