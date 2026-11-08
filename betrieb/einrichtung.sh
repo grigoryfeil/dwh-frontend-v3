@@ -46,8 +46,12 @@ rm -rf "$APP.neu"
 install -d -m 0755 "$APP.neu"
 cp -r "$quelle/harness" "$quelle/katalog" "$quelle/VERSION" "$APP.neu/"
 [[ -d $quelle/wissen ]] && cp -r "$quelle/wissen" "$APP.neu/"
+[[ -d $quelle/web ]] && cp -r "$quelle/web" "$APP.neu/"
 chown -R root:root "$APP.neu" && chmod -R a+rX "$APP.neu"
 rm -rf "$APP" && mv "$APP.neu" "$APP"
 
 /opt/dwh-frontend-v3/codex/aktuell/bin/codex --version
 echo "einrichtung: ok"
+
+# Weboberfläche (Unit, vHost, Zertifikat, Testkonto)
+[[ -x $quelle/betrieb/web-einrichtung.sh ]] && "$quelle/betrieb/web-einrichtung.sh" "$quelle"

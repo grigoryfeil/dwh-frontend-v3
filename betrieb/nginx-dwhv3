@@ -1,0 +1,33 @@
+# DWH Frontend V3, Weboberfläche. Hinter dem HAProxy auf 443: nginx lauscht nur auf 9443 mit proxy_protocol.
+# Login und Drosselung übernimmt das Backend, es sieht die Adresse über X-Forwarded-For.
+# Die Seite fragt den Stand alle zwei Sekunden ab, lange Requests gibt es nicht.
+limit_req_zone $binary_remote_addr zone=dwhv3:1m rate=60r/m;
+
+server {
+    listen 127.0.0.1:9443 ssl proxy_protocol;
+    set_real_ip_from 127.0.0.1;
+    real_ip_header proxy_protocol;
+    server_name dwhv3.152-53-125-222.sslip.io;
+
+    ssl_certificate /etc/letsencrypt/live/dwhv3.152-53-125-222.sslip.io/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/dwhv3.152-53-125-222.sslip.io/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    server_tokens off;
+    access_log off;
+    client_max_body_size 16k;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    limit_req zone=dwhv3 burst=30 nodelay;
+    limit_req_status 429;
+
+    location / {
+        proxy_pass http://127.0.0.1:9172;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Connection "";
+        proxy_read_timeout 60s;
+    }
+}

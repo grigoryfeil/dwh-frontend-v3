@@ -1,0 +1,63 @@
+# Weboberfläche von DWH Frontend V3: Backend (web/app.py) hinter nginx, nur auf loopback 9172, mit eigenem Login.
+# Läuft als dwhv3 und startet Codex direkt als Kind (Gespraech(direkt=True)), deshalb trägt diese Unit die Härtung,
+# die sonst die transiente Unit von systemd-run setzt: /run leer bis auf den DB-Socket, eigenes /tmp, keine neuen
+# Rechte. Kein RestrictNamespaces: Die Shell-Sandbox von Codex braucht Namespaces.
+# Netz: offen, weil Codex die Modell-Hosts per Namen erreicht. Die Shell des Modells hat kein Netz (config.toml).
+[Unit]
+Description=DWH Frontend V3: Weboberfläche (loopback 9172, hinter nginx)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=dwhv3
+Group=dwhv3
+WorkingDirectory=/var/lib/dwh-frontend-v3
+ExecStart=/opt/dwh-frontend-v3/venv/bin/python -I -m uvicorn web.app:aus_umgebung --factory \
+  --app-dir /opt/dwh-frontend-v3/app --host 127.0.0.1 --port 9172 --workers 1 --no-access-log \
+  --log-level warning --no-server-header --proxy-headers --forwarded-allow-ips 127.0.0.1 \
+  --timeout-graceful-shutdown 10
+Environment=PYTHONDONTWRITEBYTECODE=1 LANG=C.UTF-8 TZ=Europe/Berlin
+Environment=DWH_V3_HOSTS=dwhv3.152-53-125-222.sslip.io
+# Konten pflegt root mit web/konten.py (root:dwhv3 0640), das Backend liest sie nur
+Environment=DWH_V3_KONTEN=/etc/dwh-frontend-v3/konten.json
+Environment=DWH_V3_GESPRAECHE=/var/lib/dwh-frontend-v3/gespraeche
+# Nur Technik je Runde: Zeit, Token, Status. Keine Fragen, Antworten oder SQL.
+Environment=DWH_V3_PROTOKOLL=/var/lib/dwh-frontend-v3/web-protokoll.jsonl
+Environment=DWH_V3_ZEITLIMIT=600
+UMask=0027
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=30
+KillMode=control-group
+
+TemporaryFileSystem=/run
+BindPaths=/run/dwh-frontend-db/mysqld.sock
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/dwh-frontend-v3
+InaccessiblePaths=-/var/lib/dwh-frontend-v3/laeufe
+InaccessiblePaths=-/etc/dwh-frontend-v2 -/etc/dwh-frontend-v2-codex -/var/lib/dwh-frontend-v2 -/var/lib/dwh-frontend-v2-codex
+InaccessiblePaths=-/var/lib/dwh-frontend -/var/lib/dwh-frontend-codex -/var/lib/dwh-frontend-web -/etc/dwh-frontend -/etc/dwh-frontend-web -/srv/dwh-lieferung
+ProtectHome=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+MemoryMax=6G
+MemorySwapMax=0
+TasksMax=512
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

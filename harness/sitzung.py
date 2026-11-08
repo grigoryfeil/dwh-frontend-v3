@@ -2,10 +2,12 @@
 
 Ein Gespräch ist ein app-server-Prozess mit einem Thread, jede Frage eine Runde. Der Prozess läuft als Nutzer
 `dwhv3` in einer transienten systemd-Unit (`systemd-run --pipe`). Shell-Sandbox, Datenwerkzeug und Plugin legt
-`codex-home/config.toml` fest.
+`codex-home/config.toml` fest. Mit `direkt=True` startet der Prozess ohne `systemd-run` als Kind des Aufrufers,
+der dann selbst als `dwhv3` in einer gehärteten Unit laufen muss (Weboberfläche, `dwh-frontend-v3-web`).
 """
 
 import json
+import os
 import queue
 import subprocess
 import threading
@@ -27,6 +29,9 @@ SYSTEMD_RUN = [
     "-E", f"PATH={NODE}:/usr/bin:/bin", "-E", f"CODEX_MCP_NODE_PATH={NODE}/node",
     "-E", "LANG=C.UTF-8", "-E", "SHELL=/bin/bash", "-E", "RUST_LOG=off",
 ]
+# Dieselbe Umgebung für den Direktstart, die Härtung trägt dann die Unit des Aufrufers.
+UMGEBUNG = {"CODEX_HOME": CODEX_HOME, "HOME": "/var/lib/dwh-frontend-v3", "PATH": f"{NODE}:/usr/bin:/bin",
+            "CODEX_MCP_NODE_PATH": f"{NODE}/node", "LANG": "C.UTF-8", "SHELL": "/bin/bash", "RUST_LOG": "off"}
 
 
 class Sitzungsfehler(Exception):
@@ -43,7 +48,8 @@ class Runde:
 
 
 class Gespraech:
-    def __init__(self, arbeitsverzeichnis, anweisung, modell="gpt-6.1-sol", aufwand="high", zeitlimit=900):
+    def __init__(self, arbeitsverzeichnis, anweisung, modell="gpt-6.1-sol", aufwand="high", zeitlimit=900,
+                 direkt=False):
         self.cwd = str(arbeitsverzeichnis)
         self.anweisung = anweisung
         self.modell = modell
@@ -53,12 +59,21 @@ class Gespraech:
         self._zeilen = queue.Queue()
         self.thread_id = None
         self.codex_version = None
+        self.direkt = direkt
+        self._turn_id = None
+        self._schreibsperre = threading.Lock()
 
     def __enter__(self):
-        befehl = SYSTEMD_RUN + ["-p", f"WorkingDirectory={self.cwd}", CODEX, "app-server", "--strict-config",
-                                "--stdio"]
-        self._prozess = subprocess.Popen(befehl, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                         stderr=subprocess.DEVNULL, text=True, bufsize=1)
+        codex = [CODEX, "app-server", "--strict-config", "--stdio"]
+        if self.direkt:
+            umgebung = {**UMGEBUNG, **{k: v for k, v in os.environ.items() if k in ("TZ",)}}
+            self._prozess = subprocess.Popen(codex, cwd=self.cwd, env=umgebung, stdin=subprocess.PIPE,
+                                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, bufsize=1,
+                                             start_new_session=True)
+        else:
+            befehl = SYSTEMD_RUN + ["-p", f"WorkingDirectory={self.cwd}"] + codex
+            self._prozess = subprocess.Popen(befehl, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                             stderr=subprocess.DEVNULL, text=True, bufsize=1)
         threading.Thread(target=self._lies, daemon=True).start()
         frist = time.monotonic() + 90
         start = self._anfrage("initialize", {"clientInfo": {"name": "dwh-frontend-v3", "title": "DWH Frontend V3",
@@ -88,7 +103,7 @@ class Gespraech:
         antwort = self._anfrage("turn/start", {"threadId": self.thread_id, "model": self.modell,
                                                "effort": self.aufwand,
                                                "input": [{"type": "text", "text": text}]}, frist)
-        turn_id = (antwort.get("turn") or {}).get("id")
+        turn_id = self._turn_id = (antwort.get("turn") or {}).get("id")
         items, token, schluss, letzte, fehler, anfragen = [], {}, None, None, "", 0
         while True:
             n = self._lesen(frist)
@@ -117,6 +132,13 @@ class Gespraech:
                 return Runde(text=schluss or letzte or "", items=items, token=token,
                              sekunden=round(time.monotonic() - start, 1), modellanfragen=anfragen)
 
+    def unterbrechen(self):
+        """Bricht die laufende Runde ab (aus einem anderen Thread). `frage` endet dann mit Sitzungsfehler, das
+        Gespräch bleibt für weitere Runden offen."""
+        if self._turn_id and self._prozess.poll() is None:
+            self._senden({"method": "turn/interrupt", "params": {"threadId": self.thread_id,
+                                                                 "turnId": self._turn_id}}, mit_kennung=True)
+
     # JSON-RPC
 
     def _anfrage(self, methode, params, frist):
@@ -129,12 +151,13 @@ class Gespraech:
                 return n.get("result") or {}
 
     def _senden(self, nachricht, mit_kennung=False):
-        if mit_kennung:
-            self._id += 1
-            nachricht = {"id": self._id, **nachricht}
-        self._prozess.stdin.write(json.dumps(nachricht) + "\n")
-        self._prozess.stdin.flush()
-        return self._id
+        with self._schreibsperre:  # Abbruch kommt aus einem anderen Thread
+            if mit_kennung:
+                self._id += 1
+                nachricht = {"id": self._id, **nachricht}
+            self._prozess.stdin.write(json.dumps(nachricht) + "\n")
+            self._prozess.stdin.flush()
+            return self._id
 
     def _lies(self):
         for zeile in self._prozess.stdout:
