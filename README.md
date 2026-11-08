@@ -46,6 +46,20 @@ Stand der Grundlage: Grilling vom 08.11.2026. Gesteuert wird nach dem Skill `har
 | VPS-Betrieb | V2 `betrieb/` | Entschlackt übernehmen, kein Ballast |
 | Harness-Logik aus V2 | Prompts, Schichten, Regeln | Wird nicht übernommen |
 
+## Katalog und SAE-Wissen: gepflegte Bestände
+
+Ob der Analyst die Bedeutung der DWH-Elemente und das SAE-Wissen versteht, ist ein zentraler Erfolgsfaktor. Beides ist deshalb ein gepflegter Bestand, der sich ändern und wachsen kann. Es ist keine verdichtete Fassung.
+
+- **Katalog** (`katalog/`): drei verknüpfte Tabellen.
+  - Objekte: Tabellen und Views.
+  - Felder: Spalten.
+  - Kennzahlen.
+  - Jede Zeile ist ein Element mit Definition, Quelle der Definition, Gültigkeit (`gueltig_ab`, `gueltig_bis`), Datenstand und Status.
+- **SAE-Wissen** (`wissen/`): einzelne Einträge mit Aussage, Thema, Quelle, Datum und Gültigkeit. Wo ein Eintrag ein DWH-Element betrifft, verweist er auf dessen Katalog-ID.
+- **Historie durch neue Zeilen:** Ändert sich eine Definition, bekommt die alte Zeile ein `gueltig_bis`, und eine neue kommt dazu. So werden Zahlen eines Zeitraums mit der Definition dieses Zeitraums gelesen.
+- **Format:** CSV im Repo, semikolongetrennt und in Excel bearbeitbar. Git versioniert jede Änderung.
+- **Herkunft des Modellkontexts:** Was das Modell sieht, wird aus diesen Beständen erzeugt und nie von Hand verdichtet.
+
 ## Benannte Annahmen
 
 Diese Annahmen gelten, bis eine echte Ausgabe ihnen widerspricht.
