@@ -47,6 +47,13 @@ def _ergebnis_text(ergebnis):
 
 def schritt(item):
     """Ein Schritt der Runde, vollständig genug, um Antwort, Tabelle und Diagramm nachzuvollziehen."""
+    s = _schritt(item)
+    if s is not None:
+        s["sekunde"] = item.get("_sekunde")
+    return s
+
+
+def _schritt(item):
     art = item.get("type")
     if art == "mcpToolCall":
         argumente = item.get("arguments") or {}

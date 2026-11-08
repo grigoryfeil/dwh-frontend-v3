@@ -112,6 +112,7 @@ class Gespraech:
                 beobachter(n)
             if m == "item/completed" and p.get("turnId") == turn_id:
                 item = p.get("item") or {}
+                item["_sekunde"] = round(time.monotonic() - start, 1)  # Zeitpunkt in der Runde, für die Auswertung
                 items.append(item)
                 if item.get("type") == "agentMessage":
                     letzte = item.get("text")
