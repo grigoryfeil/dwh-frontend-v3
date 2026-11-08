@@ -12,7 +12,6 @@ export type Zug = {
   frage: string;
   zeit: Date;
   verify: boolean;
-  schnell: boolean;
   gespraech?: string;
   runde?: Runde; // Stand vom Server, während der Arbeit mit Stufen und Schritten
   fertig?: Date;
@@ -161,7 +160,7 @@ function absendenMitEnter(e: KeyboardEvent<HTMLTextAreaElement>, absenden: () =>
   }
 }
 
-type Schalterleiste = { verify: boolean; schnell: boolean; onVerify: () => void; onSchnell: () => void };
+type Schalterleiste = { verify: boolean; onVerify: () => void };
 type Eingabe = { entwurf: string; fokus: number; onEntwurf: (t: string) => void; onFrage: () => void };
 
 // Setzt den Cursor ins Feld, sobald `fokus` steigt (Wahl einer Beispielfrage), nicht beim ersten Zeichnen
@@ -170,8 +169,6 @@ function useFokus(feld: { current: HTMLTextAreaElement | null }, fokus: number) 
     if (fokus) feld.current?.focus();
   }, [fokus]);
 }
-
-const SCHNELL_TITEL = "Fast: the answer thinks less deeply. Verify still checks at full depth.";
 
 export function Leer(props: Schalterleiste & Eingabe) {
   const feld = useRef<HTMLTextAreaElement>(null);
@@ -199,15 +196,6 @@ export function Leer(props: Schalterleiste & Eingabe) {
                   Verify <span>{props.verify ? "On" : "Off"}</span>
                 </b>
                 <small>Verified answers take longer.</small>
-              </span>
-            </button>
-            <button className="pruefen" onClick={props.onSchnell} aria-pressed={props.schnell} title={SCHNELL_TITEL}>
-              <Schalter an={props.schnell} gross />
-              <span className="pruefen-text">
-                <b>
-                  Fast <span>{props.schnell ? "On" : "Off"}</span>
-                </b>
-                <small>Quicker, less in-depth.</small>
               </span>
             </button>
           </div>
@@ -253,11 +241,6 @@ export function Folge(props: Schalterleiste & Eingabe & { arbeitet: boolean }) {
                 <Schalter an={props.verify} />
                 <b>Verify</b>
                 <small>takes longer</small>
-              </button>
-              <button className="pruefen" onClick={props.onSchnell} aria-pressed={props.schnell} title={SCHNELL_TITEL}>
-                <Schalter an={props.schnell} />
-                <b>Fast</b>
-                <small>less in-depth</small>
               </button>
               <button className="knopf" onClick={props.onFrage}>
                 Ask
@@ -338,8 +321,7 @@ export function ArbeitAbschnitt(props: { zug: Zug; sekunden: number; onAbbrechen
           </div>
         </div>
         <div className="arbeit-hinweis">
-          {zug.schnell ? "Fast is on, the answer thinks less deeply. " : ""}
-          {zug.verify ? `Verify is on. This answer will be checked${zug.schnell ? " at full depth" : ""} before it is shown. ` : ""}
+          {zug.verify ? "Verify is on. This answer will be checked before it is shown. " : ""}
           Answers usually take one to several minutes.
         </div>
       </div>

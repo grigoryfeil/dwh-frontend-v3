@@ -84,7 +84,7 @@ class Grundlage(unittest.TestCase):
 
     def frage(self, text, kennung=None, verifizieren=False):
         r = self.c.post("/api/fragen", json={"text": text, "gespraech": kennung, "verifizieren": verifizieren,
-                                             "speichern": False, "schnell": False})
+                                             "speichern": False})
         self.assertEqual(r.status_code, 202, r.text)
         kennung = r.json()["gespraech"]
         for _ in range(200):

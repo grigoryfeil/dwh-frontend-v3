@@ -13,20 +13,19 @@ describe("Beispielfragen", () => {
   });
 });
 
-describe("Schalter schnell", () => {
+describe("Optionen einer Frage", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it("geht mit der Frage an den Server", async () => {
     const abruf = vi.fn(async () => new Response(JSON.stringify({ gespraech: "g" })));
     vi.stubGlobal("fetch", abruf);
-    await fragen("Wie viele?", null, { verifizieren: true, speichern: false, schnell: true });
+    await fragen("Wie viele?", null, { verifizieren: true, speichern: false });
     const [, init] = abruf.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(String(init.body))).toEqual({
       text: "Wie viele?",
       gespraech: null,
       verifizieren: true,
       speichern: false,
-      schnell: true,
     });
   });
 });

@@ -8,7 +8,6 @@ export type Pruefung = { status: "bestaetigt" | "korrigiert" | "hinweis" | "gesc
 export type Runde = {
   frage: string;
   verifizieren?: boolean;
-  schnell?: boolean;
   antwort?: string;
   ms?: number;
   zeit?: string; // Beginn der Runde, gesetzt vom Server
@@ -58,8 +57,7 @@ const json = (body: unknown): RequestInit => ({
 export const info = async (): Promise<Info> => (await anfrage("/api/stand")).json();
 export const ich = async (): Promise<{ email: string; ablage: boolean }> => (await anfrage("/api/ich")).json();
 export const anmelden = async (email: string, passwort: string) => (await anfrage("/api/anmelden", json({ email, passwort }))).json();
-// schnell: geringerer Denkaufwand nur für die Antwort, der Verifier prüft immer gründlich (dwh_v2/web.py)
-export type Optionen = { verifizieren: boolean; speichern: boolean; schnell: boolean };
+export type Optionen = { verifizieren: boolean; speichern: boolean };
 export const fragen = async (text: string, gespraech: string | null, optionen: Optionen): Promise<{ gespraech: string }> =>
   (await anfrage("/api/fragen", json({ text, gespraech, ...optionen }))).json();
 // Beta-Funktionen (Schritt 6.1), Rückbau vor dem Rollout

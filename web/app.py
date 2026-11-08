@@ -560,17 +560,15 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         s = hole_session(request)
         if s is None:
             return nicht_angemeldet()
-        # `verifizieren` schaltet die Prüfrunde ein (pruefe), `schnell` wird angenommen und ignoriert. `speichern` ist der Schalter der Seite für die Beta-Ablage.
-        daten = json_body(await request.body(), [("text", str), ("verifizieren", bool), ("schnell", bool),
-                                                 ("speichern", bool)])
+        # `verifizieren` schaltet die Prüfrunde ein (pruefe). `speichern` ist der Schalter der Seite für die Beta-Ablage.
+        daten = json_body(await request.body(), [("text", str), ("verifizieren", bool), ("speichern", bool)])
         if daten is None:
             return fehler(422, "Ungültige Frage")
         text = (daten.get("text") or "").strip()
         kennung = daten.get("gespraech")
         if not text or len(text) > 4000 or not (kennung is None or isinstance(kennung, str)):
             return fehler(422, "Ungültige Frage")
-        runde = {"frage": text, "verifizieren": bool(daten.get("verifizieren")),
-                 "schnell": bool(daten.get("schnell")), "zeit": jetzt_iso(),
+        runde = {"frage": text, "verifizieren": bool(daten.get("verifizieren")), "zeit": jetzt_iso(),
                  "abfragen": [], "beleg": [], "dateien": []}
         with sperre:
             if kennung is None:

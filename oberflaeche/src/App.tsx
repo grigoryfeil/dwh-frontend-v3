@@ -23,7 +23,6 @@ export default function App() {
   const [entwurf, setEntwurf] = useState("");
   const [fokus, setFokus] = useState(0); // jede Erhöhung setzt den Cursor ins Eingabefeld
   const [verify, setVerify] = useState(false);
-  const [schnell, setSchnell] = useState(false); // bleibt an bis zum Ausschalten oder Zurücksetzen
   const [banner, setBanner] = useState(false);
   const [overlay, setOverlay] = useState<Overlay | null>(null);
   const [dialog, setDialog] = useState(false);
@@ -55,7 +54,6 @@ export default function App() {
     setZuege([]);
     setEntwurf("");
     setVerify(false);
-    setSchnell(false);
     setBanner(false);
     setOverlay(null);
     setDialog(false);
@@ -79,7 +77,7 @@ export default function App() {
       setZuege(
         runden.map((r) => {
           const zeit = new Date(r.zeit ?? Date.now());
-          return { id: ++zaehler.current, frage: r.frage, zeit, verify: false, schnell: false, runde: r, fertig: new Date(zeit.getTime() + (r.ms ?? 0)) };
+          return { id: ++zaehler.current, frage: r.frage, zeit, verify: false, runde: r, fertig: new Date(zeit.getTime() + (r.ms ?? 0)) };
         }),
       );
       zeigeToast("Saved example", "Read only. A new question starts a new conversation.");
@@ -238,14 +236,14 @@ export default function App() {
     }
   }
 
-  function frage(text: string, mitPruefung = verify, mitSchnell = schnell) {
+  function frage(text: string, mitPruefung = verify) {
     const t = text.trim();
     if (!t || laufend) return;
     const id = ++zaehler.current;
-    setZuege((zs) => [...zs, { id, frage: t, zeit: new Date(), verify: mitPruefung, schnell: mitSchnell }]);
+    setZuege((zs) => [...zs, { id, frage: t, zeit: new Date(), verify: mitPruefung }]);
     setEntwurf("");
     setVerify(false); // gilt nur für die nächste Frage
-    void starte(id, t, { verifizieren: mitPruefung, speichern: ablage && speichern, schnell: mitSchnell });
+    void starte(id, t, { verifizieren: mitPruefung, speichern: ablage && speichern });
   }
 
   function waehleBeispiel(text: string) {
@@ -267,7 +265,7 @@ export default function App() {
 
   function nochmal(zug: Zug) {
     setZuege((zs) => zs.filter((z) => z.id !== zug.id));
-    frage(zug.frage, zug.verify, zug.schnell);
+    frage(zug.frage, zug.verify);
   }
 
   async function aufraeumen(kennung: string, laeuftNoch: boolean) {
@@ -340,10 +338,8 @@ export default function App() {
             entwurf={entwurf}
             fokus={fokus}
             verify={verify}
-            schnell={schnell}
             onEntwurf={setEntwurf}
             onVerify={() => setVerify((v) => !v)}
-            onSchnell={() => setSchnell((s) => !s)}
             onFrage={() => frage(entwurf)}
           />
         ) : (
@@ -374,10 +370,8 @@ export default function App() {
               entwurf={entwurf}
               fokus={fokus}
               verify={verify}
-              schnell={schnell}
               onEntwurf={setEntwurf}
               onVerify={() => setVerify((v) => !v)}
-              onSchnell={() => setSchnell((s) => !s)}
               onFrage={() => frage(entwurf)}
             />
           </>

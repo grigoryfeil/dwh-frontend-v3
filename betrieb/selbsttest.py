@@ -34,8 +34,7 @@ def main():
             raise RuntimeError(f"Seite nicht erreichbar (HTTP {s})")
         if req("/api/anmelden", {"email": z["benutzer"], "passwort": z["passwort"]})[0] != 200:
             raise RuntimeError("Anmeldung gescheitert")
-        s, d = req("/api/fragen", {"text": FRAGE, "gespraech": None, "verifizieren": False, "speichern": False,
-                                   "schnell": False})
+        s, d = req("/api/fragen", {"text": FRAGE, "gespraech": None, "verifizieren": False, "speichern": False})
         if s != 202:
             raise RuntimeError(f"Frage nicht angenommen (HTTP {s})")
         kennung = d["gespraech"]

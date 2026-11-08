@@ -18,7 +18,7 @@ print(req("/api/anmelden", {"email": z["benutzer"], "passwort": z["passwort"]})[
 PRUEFEN = "--pruefen" in sys.argv
 k = None
 for frage in [a for a in sys.argv[1:] if a != "--pruefen"]:
-    s, d = req("/api/fragen", {"text": frage, "gespraech": k, "verifizieren": PRUEFEN, "speichern": False, "schnell": False})
+    s, d = req("/api/fragen", {"text": frage, "gespraech": k, "verifizieren": PRUEFEN, "speichern": False})
     k = d["gespraech"]; t0 = time.time(); letzte = None
     while True:
         time.sleep(3)

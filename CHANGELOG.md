@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1 (08.11.2026)
+
+- Schalter „Fast“ vollständig entfernt (Oberfläche, Typen, Backend, Betriebsskripte, Tests). Er war aus V2 übernommen und ohne Wirkung. Einziger Schalter ist „Verify“.
+
 ## 0.6.0 (08.11.2026)
 
 Härtung vor der Beta nach drei Reviews (Codex Astra, Code-Review Standards und Spezifikation), siehe `handover/2026-11-08-zweitmeinung-code-beta-ergebnis.md`.

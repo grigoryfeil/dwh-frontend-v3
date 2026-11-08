@@ -30,7 +30,7 @@ class Nutzer:
 
     def frage(self, text, kennung=None):
         return self.req("/api/fragen", {"text": text, "gespraech": kennung, "verifizieren": False,
-                                        "speichern": False, "schnell": False})
+                                        "speichern": False})
 
     def warte(self, kennung, grenze=1800):
         t0 = time.time()
