@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3 (08.11.2026)
+
+- Arbeitsweise: höchstens eine Rückfrage je Frage; nach Antwort oder Präzisierung mit der am besten passenden, durch die Daten gedeckten Lesart rechnen und sie benennen.
+- Testtreiber beantwortet Rückfragen nur, wenn eine kam.
+
 ## 0.3.2 (08.11.2026)
 
 - Abbruchquote und Studienerfolg am Dashboard „Student Outcomes – Cohort View“ (Eva Elliott) verankert: reife Kohorten ab 2018_H1, ohne Zertifikate; 5 neue Kennzahlen.
