@@ -49,7 +49,7 @@ Stand 08.11.2026. Aufgebaut aus dem V2-Firmenbild und gegen die Rohfunde unter `
 - **Nur Wiki (26 Einträge):** Die Wiki-Rohtexte liegen nicht im Scan, nur der V2-Befund mit Seitennamen und Seitendatum. Die Einträge tragen den Vermerk „Nur Wiki-Beleg“.
 - **Tragend ist der Leiter BI (16 Einträge):** Festlegungen aus dem V2-Dialog vom 02. und 06.11.2026. Wo Rohquellen widersprechen, stehen sie als `offen`.
 - **Bericht Semesterumfrage August 2026:** im Scan nur das Deckblatt. Fünf Kennzahlen daraus sind `offen` (UMF-014, -015, -016, -020, -022).
-- **`bezug_ids`:** nur dort gesetzt, wo V2 ein Objekt eindeutig nennt (StudentStatistics, dashboard_goals). Der Katalog lag beim Aufbau noch nicht vor.
+- **`bezug_ids`:** am 08.11.2026 gegen `katalog/` nachgetragen, 194 von 399 Einträgen verweisen auf Objekte, Felder oder Kennzahlen. Alle IDs sind per Skript gegen den Katalog geprüft.
 
 ## Zuerst prüfen beim Quellenabgleich
 
@@ -72,4 +72,4 @@ Tragend und unsicher, in dieser Reihenfolge:
 
 - Organisation, Standorte, Begriffe, Systeme und Ereignisse sind nicht Eintrag für Eintrag gegen die Rohfunde geprüft, nur die tragenden Aussagen.
 - Die Wiki-Seiten und der Umfragebericht August 2026 sind nicht am Original gelesen.
-- `bezug_ids` sind kaum gesetzt und müssen nachgezogen werden, sobald `katalog/` die IDs führt. `kennzahl_id` ist nirgends gesetzt.
+- `bezug_ids` müssen nachgezogen werden, wenn sich IDs im Katalog ändern.
