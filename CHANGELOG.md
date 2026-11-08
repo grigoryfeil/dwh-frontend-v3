@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1 (08.11.2026)
+
+- Dashboards: eigenständige, schlanke HTML-Datei nach den Anleitungen des Plugins statt der Data App, deren ChatGPT-Bedienelemente (Veröffentlichen, Ask ChatGPT) hier ohne Funktion sind.
+
 ## 0.4.0 (08.11.2026)
 
 - Dashboards als Ausgabeformat: abgeschottete Anzeige in der Oberfläche, Zeitlimit 25 Minuten, drei Dashboard-Prüffälle.
