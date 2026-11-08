@@ -30,15 +30,35 @@ def datenstand():
     return datetime.datetime.strptime(schema[2:10], "%Y%m%d").strftime("%d.%m.%Y"), schema
 
 
+GRENZE = 200_000  # Zeichen je Werkzeugergebnis, schützt nur vor Ausreißern
+
+
+def _ergebnis_text(ergebnis):
+    """Text eines MCP-Ergebnisses: der Inhalt des Werkzeugs `sql` ist JSON mit spalten, zeilen, gekuerzt."""
+    if not isinstance(ergebnis, dict):
+        return ergebnis
+    teile = [c.get("text", "") for c in ergebnis.get("content") or [] if isinstance(c, dict)]
+    text = "\n".join(teile) if teile else json.dumps(ergebnis, ensure_ascii=False)
+    try:
+        return json.loads(text)
+    except (ValueError, TypeError):
+        return text[:GRENZE]
+
+
 def schritt(item):
+    """Ein Schritt der Runde, vollständig genug, um Antwort, Tabelle und Diagramm nachzuvollziehen."""
     art = item.get("type")
     if art == "mcpToolCall":
         argumente = item.get("arguments") or {}
-        return {"art": "sql", "abfrage": argumente.get("abfrage", argumente)}
+        return {"art": "sql", "abfrage": argumente.get("abfrage", argumente),
+                "ergebnis": _ergebnis_text(item.get("result")), "fehler": item.get("error")}
     if art == "commandExecution":
-        return {"art": "befehl", "befehl": str(item.get("command"))[:400]}
+        return {"art": "befehl", "befehl": str(item.get("command")),
+                "ausgabe": str(item.get("aggregatedOutput") or "")[:GRENZE], "exitcode": item.get("exitCode")}
     if art == "reasoning":
-        return {"art": "denken", "text": " ".join(item.get("summary") or [])[:400]}
+        return {"art": "denken", "text": " ".join(item.get("summary") or [])}
+    if art == "fileChange":
+        return {"art": "datei", "aenderungen": [c.get("path") for c in item.get("changes") or []]}
     return None
 
 
@@ -65,6 +85,14 @@ def gespraech_fuehren(nummer, fragen, anweisung, lauf):
     except Sitzungsfehler as fehler:
         ergebnis["fehler"] = str(fehler)
         print(f"[{nummer}] FEHLER {fehler}", flush=True)
+    # Erzeugte Dateien (Diagramme, Tabellen) mit dem Lauf sichern, das Gesprächsverzeichnis ist nur Arbeitsfläche
+    ziel = DATEN / "laeufe" / lauf / f"dateien-{nummer:02d}"
+    dateien = [p for p in arbeit.rglob("*") if p.is_file() and not p.is_symlink()
+               and not any(t.startswith(".") for t in p.relative_to(arbeit).parts)]
+    for pfad in dateien:
+        (ziel / pfad.relative_to(arbeit)).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(pfad, ziel / pfad.relative_to(arbeit))
+    ergebnis["dateien"] = [str(p.relative_to(arbeit)) for p in dateien]
     return ergebnis
 
 
