@@ -71,6 +71,12 @@ def gespraech_fuehren(nummer, fragen, anweisung, lauf):
         with Gespraech(arbeit, anweisung) as g:
             ergebnis["codex"] = g.codex_version
             for frage in fragen:
+                # {"falls_rueckfrage": "Ja."}: die vorbereitete Antwort eines Nutzers, der nur antwortet, wenn gefragt
+                if isinstance(frage, dict):
+                    letzte = ergebnis["runden"][-1].get("antwort", "") if ergebnis["runden"] else ""
+                    if not letzte.lstrip().startswith("[Rückfrage]"):
+                        continue
+                    frage = frage["falls_rueckfrage"]
                 try:
                     r = g.frage(frage)
                 except Sitzungsfehler as fehler:

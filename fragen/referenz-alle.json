@@ -8,7 +8,9 @@
  ],
  [
   "Wie viele Neueinschreibungen hatten wir zum letzten Wintersemester, und wie ist das im Vergleich zum Vorjahr?",
-  "Ja, genau so."
+  {
+   "falls_rueckfrage": "Ja, genau so."
+  }
  ],
  [
   "Wie hoch ist der aktuelle Studierendenbestand je Campus?",
@@ -22,7 +24,9 @@
  ],
  [
   "Wie hoch ist die Abbruchquote im Bachelor?",
-  "Ja."
+  {
+   "falls_rueckfrage": "Ja."
+  }
  ],
  [
   "Welcher Anteil unserer Bachelor-Studierenden erreicht einen Abschluss, und wie viele davon den ursprünglich angestrebten?"

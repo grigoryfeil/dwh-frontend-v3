@@ -49,9 +49,9 @@
    "rolle": "entwicklung",
    "fragen": [
     "Wie viele Neueinschreibungen hatten wir zum letzten Wintersemester, und wie ist das im Vergleich zum Vorjahr?",
-    "Ja, genau so."
+    {"falls_rueckfrage": "Ja, genau so."}
    ],
-   "lesart": "Neueinschreibungen nach Kennzahlen v4 der Leitung BI: CAS-Verträge (netto), die über das Census Date hinaus bestehen, Herbstintake 2026 gegen 2025 (August- bis Oktoberstarts), Kern und gesamt (Kern, Top-up, Master), ohne Media University; Genf zählt für beide Intakes mit, weil der Studienstart vor dem 01.10.2026 liegt. Die Rückfrage wird mit der Empfehlung (Herbst 2026 gegen Herbst 2025) beantwortet.",
+   "lesart": "Neueinschreibungen nach Kennzahlen v4 der Leitung BI: CAS-Verträge (netto), die über das Census Date hinaus bestehen, Herbstintake 2026 gegen 2025 (August- bis Oktoberstarts), Kern und gesamt (Kern, Top-up, Master), ohne Media University; Genf zählt für beide Intakes mit, weil der Studienstart vor dem 01.10.2026 liegt. Kommt eine Rückfrage, bestätigt der Nutzer die Empfehlung (Herbst 2026 gegen Herbst 2025) mit „Ja, genau so.“.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
     {"art": "zahl", "name": "Herbst 2026", "werte": [1028, 1147, 976, 1095], "toleranz": 3, "kontext": "2026|0926|aktuell|letzte"},
@@ -124,9 +124,9 @@
    "rolle": "entwicklung",
    "fragen": [
     "Wie hoch ist die Abbruchquote im Bachelor?",
-    "Ja."
+    {"falls_rueckfrage": "Ja."}
    ],
-   "lesart": "Abbruchquote nach Kennzahlen v4 und Dashboard „Student Outcomes – Cohort View“: Terminations (aktive Vertragsbeendigung) geteilt durch alle Personen der reifen Eintrittskohorten ab 2018_H1, zusammengefasst, Programm BA (Hons), alle Standorte. Das ist die Standardaussage ohne Zeitangabe. Die jüngste reife Kohorte (2023_H1, 28,9 %) ist eine zulässige Aufschlüsselung und ergibt allein unklar. Einschluss der Kohorten 2016 und 2017 (26,3 %) weicht von der Achse des Dashboards ab und gilt als verfehlt. Die Rückfrage des Analysten wird mit „Ja.“ beantwortet, die Erwartung hängt deshalb nicht von seiner Empfehlung ab.",
+   "lesart": "Abbruchquote nach Kennzahlen v4 und Dashboard „Student Outcomes – Cohort View“: Terminations (aktive Vertragsbeendigung) geteilt durch alle Personen der reifen Eintrittskohorten ab 2018_H1, zusammengefasst, Programm BA (Hons), alle Standorte. Das ist die Standardaussage ohne Zeitangabe. Die jüngste reife Kohorte (2023_H1, 28,9 %) ist eine zulässige Aufschlüsselung und ergibt allein unklar. Einschluss der Kohorten 2016 und 2017 (26,3 %) weicht von der Achse des Dashboards ab und gilt als verfehlt. Kommt eine Rückfrage, antwortet der Nutzer „Ja.“; die Erwartung hängt nicht von der Empfehlung des Analysten ab.",
    "datenstand": "b_20261106t180757z_sooc",
    "erwartet": [
     {"art": "zahl", "name": "Abbruchquote BA, reife Kohorten ab 2018_H1", "werte": [30.2], "toleranz": 0.1, "einheit": "%", "werte_unklar": [28.9]}

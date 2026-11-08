@@ -7,7 +7,11 @@ Aufruf:
   python3 referenz/vergleich.py --fragen entwicklung > fragen/ref.json Fragendatei für lauf.py erzeugen
                                 (entwicklung, zurueckgehalten oder alle)
 
-Kein Modellrichter. Je Fall wird die Antwort der letzten Runde geprüft:
+Fragenliste eines Falls: Texte und bedingte Antworten {"falls_rueckfrage": "Ja."}. lauf.py sendet eine bedingte
+Antwort nur, wenn die vorige Antwort mit [Rückfrage] beginnt. Wurde sie übersprungen, ist das Gespräch trotzdem
+vollständig. Wurde sie ohne Rückfrage dennoch gesendet (älterer Treiber), zählt die Runde nicht.
+
+Kein Modellrichter. Je Fall wird die Antwort der letzten gewerteten Runde geprüft:
   zahl            ein erwarteter Wert (Liste `werte` mit `toleranz` bzw. `toleranz_rel`, oder `bereich`) steht in der
                   Antwort, wenn `kontext` gesetzt ist, in einer Zeile, die auf `kontext` passt. Steht statt dessen nur
                   ein Wert aus `werte_unklar` da (zulässige Aufschlüsselung, nicht die Standardaussage), ist das unklar.
@@ -79,17 +83,53 @@ def norm(text):
     return re.sub(r"\s+", " ", text or "").strip().lower()
 
 
+def ist_bedingt(element):
+    return isinstance(element, dict)
+
+
+def fragetext(element):
+    return element["falls_rueckfrage"] if ist_bedingt(element) else element
+
+
+def ist_rueckfrage(runde):
+    return (runde.get("antwort") or "").lstrip().startswith("[Rückfrage]")
+
+
+def abgleichen(fragen, runden):
+    """Legt die Fragenliste eines Falls auf die Runden eines Gesprächs.
+
+    Liefert ("voll", Index der gewerteten Runde), ("teil", fehlende Frage) oder None, wenn es ein anderes Gespräch ist.
+    Gewertet wird die letzte Runde zu einer Frage oder zu einer bedingten Antwort, der eine Rückfrage vorausging.
+    """
+    i, gewertet = 0, None
+    for element in fragen:
+        text = norm(fragetext(element))
+        trifft = i < len(runden) and norm(runden[i].get("frage")) == text
+        if ist_bedingt(element):
+            berechtigt = i > 0 and ist_rueckfrage(runden[i - 1])
+            if trifft:
+                if berechtigt:
+                    gewertet = i
+                i += 1          # ohne Rückfrage gesendet (älterer Treiber): Runde zählt nicht
+            elif berechtigt:
+                return ("teil", fragetext(element)) if i == len(runden) else None
+            continue            # übersprungen, weil keine Rückfrage kam
+        if not trifft:
+            return ("teil", fragetext(element)) if 0 < i == len(runden) else None
+        gewertet, i = i, i + 1
+    return ("voll", gewertet) if i == len(runden) else None
+
+
 def gespraech_finden(fall, gespraeche):
-    """Gespräch mit denselben Fragen. Liefert (gespraech, vollständig)."""
-    soll = [norm(q) for q in fall["fragen"]]
-    teilweise = None
+    """Gespräch zum Fall. Liefert (gespraech, ("voll", Rundenindex) oder ("teil", fehlende Frage)) oder (None, None)."""
+    teilweise = (None, None)
     for g in gespraeche:
-        ist = [norm(r.get("frage")) for r in g.get("runden", [])]
-        if ist == soll:
-            return g, True
-        if ist and soll[:len(ist)] == ist and teilweise is None:
-            teilweise = g
-    return teilweise, False
+        treffer = abgleichen(fall["fragen"], g.get("runden", []))
+        if treffer and treffer[0] == "voll":
+            return g, treffer
+        if treffer and teilweise[0] is None:
+            teilweise = (g, treffer)
+    return teilweise
 
 
 def passt(wert, pruefung):
@@ -169,17 +209,18 @@ def zahl_pruefen(p, antwort):
 
 
 def fall_pruefen(fall, gespraeche):
-    g, vollstaendig = gespraech_finden(fall, gespraeche)
+    g, treffer = gespraech_finden(fall, gespraeche)
     if g is None:
         return {"status": "nicht gelaufen", "gruende": []}
     if g.get("fehler"):
         return {"status": "unklar", "gruende": [f"Gespräch abgebrochen: {g['fehler'][:160]}"]}
-    if not vollstaendig:
+    fehlerhaft = [r for r in g["runden"] if r.get("fehler")]
+    if fehlerhaft:
+        return {"status": "unklar", "gruende": [f"Runde mit Fehler: {fehlerhaft[0]['fehler'][:160]}"]}
+    if treffer[0] == "teil":
         return {"status": "unklar",
-                "gruende": [f"Lauf enthält nur {len(g['runden'])} von {len(fall['fragen'])} Fragen des Falls"]}
-    runde = g["runden"][-1]
-    if runde.get("fehler"):
-        return {"status": "unklar", "gruende": [f"Runde mit Fehler: {runde['fehler'][:160]}"]}
+                "gruende": [f"Gespräch unvollständig, im Lauf fehlt: „{treffer[1]}“ (gelaufene Runden: {len(g['runden'])})"]}
+    runde = g["runden"][treffer[1]]
     antwort = runde.get("antwort") or ""
     if antwort.lstrip().startswith("[Rückfrage]"):
         return {"status": "unklar", "gruende": [f"Antwort endet mit Rückfrage: {antwort.strip()[:200]}"]}
@@ -231,7 +272,8 @@ def bericht(lauf, faelle, ergebnisse, verdeckt=False):
             if verdeckt and f["rolle"] == "zurueckgehalten":
                 zeilen.append(f"- **{f['id']}** ({f['rolle']}, {f['thema']}): Einzelheiten verdeckt")
                 continue
-            zeilen.append(f"- **{f['id']}** ({f['rolle']}, {f['thema']}): {f['fragen'][-1]}")
+            frage = [e for e in f["fragen"] if not ist_bedingt(e)][-1]
+            zeilen.append(f"- **{f['id']}** ({f['rolle']}, {f['thema']}): {frage}")
             zeilen += [f"  - {g}" for g in ergebnisse[f["id"]]["gruende"]]
         zeilen.append("")
     for status in ("bestanden", "nicht gelaufen"):

@@ -33,7 +33,7 @@ Für Berichte an entwickelnde Sessions `--verdeckt` setzen: Dann fehlen Frage, E
 | `thema` | funnel, bestand, leads, neueinschreibungen, abbruch, umfrage, grenze |
 | `art` | `wert` (Zahl erwartet), `grenze` (echte Datengrenze), `quellgrenze` (Grenze der zuerst naheliegenden Quelle ist nicht die Grenze der Frage) |
 | `rolle` | `entwicklung` oder `zurueckgehalten`, muss zur Datei passen |
-| `fragen` | Gesprächsverlauf, wie ihn `lauf.py` abspielt, auch mit Antwort auf die erwartbare Rückfrage |
+| `fragen` | Gesprächsverlauf, wie ihn `lauf.py` abspielt, siehe unten |
 | `lesart` | gemeinte Kennzahl, Abgrenzung, Stichtag, zulässige Alternativen |
 | `datenstand` | Bestand der Kopie, auf dem die Referenz gilt |
 | `erwartet` | Prüfungen, siehe unten |
@@ -41,7 +41,13 @@ Für Berichte an entwickelnde Sessions `--verdeckt` setzen: Dann fehlen Frage, E
 | `nachvollzogen` | eigene Rechnung auf der Kopie und ob sie zum Bericht passt |
 | `sicherheit` | hoch, mittel oder niedrig mit Grund |
 
-Prüfungen in `erwartet`, alle beziehen sich auf die Antwort der letzten Runde:
+Elemente in `fragen`:
+
+- Ein Text ist eine Frage, die immer gesendet wird. Das gilt auch für echte Nachfragen wie „Und wie war das vor einem Jahr?“ oder Korrekturen wie „Nein, alle Intakes der letzten Jahre als Kurve.“, die auch nach einer direkten Antwort sinnvoll sind.
+- `{"falls_rueckfrage": "Ja."}` ist die vorbereitete Antwort auf eine erwartbare Rückfrage. `lauf.py` sendet sie nur, wenn die vorige Antwort mit `[Rückfrage]` beginnt, sonst wird sie übersprungen. Diese Form gilt für jede Folgefrage, die nur eine Rückfrage beantwortet.
+- `vergleich.py` legt die Liste Schritt für Schritt auf die Runden: Ein übersprungenes Element lässt das Gespräch vollständig. Kam eine Rückfrage, aber die Antwort fehlt im Lauf, ist der Fall unklar. Wurde die Antwort ohne Rückfrage trotzdem gesendet (Läufe vor der Umstellung), zählt diese Runde nicht.
+
+Prüfungen in `erwartet`, alle beziehen sich auf die Antwort der letzten gewerteten Runde, also der letzten Frage oder der letzten bedingten Antwort, der eine Rückfrage vorausging:
 
 - `zahl`: `werte` (eine oder mehrere zulässige Lesarten) mit `toleranz` oder `toleranz_rel`, oder `bereich`. `einheit: "%"` verlangt ein Prozentzeichen. `kontext` ist ein regulärer Ausdruck, der in derselben Zeile stehen muss, bei Tabellen genügt die Kopfzeile. `werte_unklar` nennt Werte, die eine zulässige Aufschlüsselung statt der Standardaussage sind: Stehen nur sie da, ist der Fall unklar.
 - `einschraenkung`: jedes Muster in `muster` kommt vor.
@@ -86,4 +92,5 @@ Davon prüfen echte Datengrenzen R-U03, R-G01, R-B02, R-L04, R-U04, R-G02; Quell
 |---|---|---|---|---|
 | 08.11.2026 | R-A01 | entwicklung | Erwartung von „jüngste reife Kohorte 28,9 % oder 2022_H2 30,0 %“ auf „reife Kohorten ab 2018_H1 30,2 %“, 28,9 % ergibt nur noch unklar | Unabhängige SAE-Quelle: Dashboard „Student Outcomes – Cohort View“ (Eva Elliott, Stand 26.10.2026) legt die Standardaussage fest; Kopie identisch |
 | 08.11.2026 | R-A02 | zurückgehalten | Prüfungsänderung auf Grundlage einer unabhängigen Quelle, nicht wegen eines Laufergebnisses: Abbruchquote von Bereich 23,0 bis 29,5 % auf 28,5 % (alle Programme ohne Certificates, ab 2018_H1), 24,9 % mit Certificates ergibt unklar | Dasselbe Dashboard; vorher gab es für die Abbruchquote keinen Berichtsbeleg, alle vier Kopfwerte für alle Programme stimmen mit der Kopie überein |
+| 08.11.2026 | R-N01, R-A01 | entwicklung | vorbereitete Antwort auf die Rückfrage als `{"falls_rueckfrage": …}`, Erwartungen unverändert | In Lauf 20261108-154943 beantwortete der Analyst R-A01 ohne Rückfrage richtig, gewertet wurde aber die Runde nach dem ins Leere gelaufenen „Ja.“. Auf den sieben vorhandenen Läufen ändert sich nur dieses Urteil |
 | 08.11.2026 | R-A03, R-A04 | entwicklung, zurückgehalten | neu: Effective und Original Award BA, End without Award alle Programme | relevante Geschäftsfragen mit unabhängiger Quelle (dasselbe Dashboard) |
