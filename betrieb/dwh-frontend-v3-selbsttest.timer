@@ -1,0 +1,9 @@
+[Unit]
+Description=DWH Frontend V3: täglicher Selbsttest um 06:30
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 Europe/Berlin
+Persistent=true
+
+[Install]
+WantedBy=timers.target

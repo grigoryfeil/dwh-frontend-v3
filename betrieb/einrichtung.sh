@@ -44,7 +44,7 @@ install -m 0640 -o root -g dwhv3 "$quelle/betrieb/codex-config.toml" "$H/config.
 
 # Python für das Datenwerkzeug.
 [[ -x /opt/dwh-frontend-v3/venv/bin/python ]] || python3 -m venv /opt/dwh-frontend-v3/venv
-/opt/dwh-frontend-v3/venv/bin/pip install -q "mcp==2.3.0" "PyMySQL==1.2.3"
+/opt/dwh-frontend-v3/venv/bin/pip install -q "mcp==2.3.0" "PyMySQL==1.2.3" "argon2-cffi==25.1.0"
 
 # Anwendung: Harness, Katalog, SAE-Wissen, Version.
 rm -rf "$APP.neu"

@@ -2,7 +2,7 @@
 
 Meldet sich mit dem Testkonto aus /etc/dwh-frontend-v3/zugang an (das Passwort wird nicht ausgegeben) und stellt die
 übergebenen Fragen nacheinander im selben Gespräch, also ab der zweiten als Nachfrage.
-Aufruf: python3 -I web-probe.py "Frage" ["Nachfrage" ...]
+Aufruf: python3 -I web-probe.py [--pruefen] "Frage" ["Nachfrage" ...]   (--pruefen: mit Prüfrunde)
 """
 import http.cookiejar, json, re, ssl, sys, time, urllib.request
 B = "https://dwhv3.152-53-125-222.sslip.io"
@@ -15,9 +15,10 @@ def req(pfad, daten=None, methode=None):
         return a.status, json.loads(a.read() or b"null")
 print(req("/api/stand"))
 print(req("/api/anmelden", {"email": z["benutzer"], "passwort": z["passwort"]})[0])
+PRUEFEN = "--pruefen" in sys.argv
 k = None
-for frage in sys.argv[1:]:
-    s, d = req("/api/fragen", {"text": frage, "gespraech": k, "verifizieren": False, "speichern": True, "schnell": False})
+for frage in [a for a in sys.argv[1:] if a != "--pruefen"]:
+    s, d = req("/api/fragen", {"text": frage, "gespraech": k, "verifizieren": PRUEFEN, "speichern": False, "schnell": False})
     k = d["gespraech"]; t0 = time.time(); letzte = None
     while True:
         time.sleep(3)
@@ -27,7 +28,8 @@ for frage in sys.argv[1:]:
             sch = [x["text"] for x in r.get("schritte", [])]
             if sch and sch[-1] != letzte: letzte = sch[-1]; print(f"  {int(time.time()-t0)}s {[x["status"][0] for x in r.get("stufen",[])]} {letzte}", flush=True)
             continue
-        print(st["status"], int(time.time()-t0), "s", r.get("fehler"))
+        print(st["status"], int(time.time()-t0), "s", r.get("fehler"), "Prüfung:", r.get("pruefung"))
+        print("Stufen:", [(x["stufe"], x["status"]) for x in r.get("stufen") or []])
         print((r.get("antwort") or "")[:800])
         for d in r.get("dateien") or []:
             with op.open(urllib.request.Request(B + d["url"]), timeout=30) as a:

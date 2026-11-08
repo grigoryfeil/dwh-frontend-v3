@@ -1,0 +1,8 @@
+# Täglicher Selbsttest der Weboberfläche (betrieb/selbsttest.py), ausgelöst vom gleichnamigen Timer.
+[Unit]
+Description=DWH Frontend V3: täglicher Selbsttest über die öffentliche Adresse
+After=dwh-frontend-v3-web.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -I /opt/dwh-frontend-v3/app/betrieb/selbsttest.py

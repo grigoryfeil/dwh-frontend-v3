@@ -1,6 +1,8 @@
 """Konten der Oberfläche: je E-Mail ein scrypt-Hash, gepflegt von root, gelesen vom Backend.
 
 Kontendatei (JSON, root:dwhv3 0640): {"<email>": {"hash": "scrypt$n$r$p$salz$hash", "aktiv": true}}.
+Ein argon2-Hash (`$argon2id$...`) wird ebenfalls geprüft: So lässt sich ein Konto aus V2 samt Passwort übernehmen,
+ohne das Passwort zu kennen (Beta-Testkonto `tester`, 08.11.2026).
 Pflege auf dem VPS als root: `python3 -I /opt/dwh-frontend-v3/app/web/konten.py setzen <name> < passwortdatei`, `sperren <name>`.
 """
 
@@ -28,6 +30,12 @@ def hash_von(passwort, salz=None, n=N, r=R, p=P):
 
 
 def stimmt(passwort, gespeichert):
+    if gespeichert.startswith("$argon2"):
+        try:
+            from argon2 import PasswordHasher  # nur für aus V2 übernommene Konten
+            return PasswordHasher().verify(gespeichert, passwort)
+        except Exception:  # noqa: BLE001, jede Abweichung heißt: stimmt nicht
+            return False
     try:
         _, n, r, p, salz, wert = gespeichert.split("$")
         neu = hash_von(passwort, bytes.fromhex(salz), int(n), int(r), int(p))

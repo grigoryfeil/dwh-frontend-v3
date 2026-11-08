@@ -6,8 +6,9 @@ Runden offen bleibt und nach Leerlauf endet. Gespräche liegen nur im Arbeitsspe
 sie begonnen hat. Endet die Session, enden ihre Gespräche. TLS übernimmt nginx.
 
 Bedient wird nur, was die Oberfläche braucht. Export, Feedback, Ablage und Beispiele gibt es nicht, die Oberfläche
-kommt ohne sie aus (Antwort 404 bzw. `ablage: false`). Felder ohne V3-Gegenstück (`beleg`, `abfragen`, `pruefung`)
-bleiben leer. SQL geht nicht an die Seite. Dateien, die die Antwort im eigenen Gesprächsverzeichnis nennt (etwa
+kommt ohne sie aus (Antwort 404 bzw. `ablage: false`). Felder ohne V3-Gegenstück (`beleg`, `abfragen`) bleiben
+leer. SQL geht nie an die Seite (Entscheidung Grigory, 08.11.2026), `abfragen` bleibt deshalb immer leer. Mit dem
+Schalter `verifizieren` prüft ein zweites Gespräch die Antwort (harness/pruefung.py), das Ergebnis steht in `pruefung`. Dateien, die die Antwort im eigenen Gesprächsverzeichnis nennt (etwa
 Diagramme und Dashboards), übersetzt web/dateien.py in `dateien` und liefert nur diese aus. Mit eingeschalteter
 Beta-Ablage (web/ablage.py) wird jedes Gespräch vollständig abgelegt, die Seite zeigt das an und bietet Feedback.
 """
@@ -38,6 +39,7 @@ HIER = Path(__file__).resolve().parent
 sys.path.insert(0, str(HIER.parent / "harness"))
 import kontext  # noqa: E402
 import lauf  # noqa: E402
+import pruefung  # noqa: E402
 from sitzung import Gespraech, Sitzungsfehler  # noqa: E402
 
 from web import ablage as ablage_modul, dateien, fortschritt, konten  # noqa: E402
@@ -137,6 +139,7 @@ class Eintrag:
         self.gespeichert = set()
         self.ablage_sperre = threading.Lock()
         self.gespraech = None  # wird im Hintergrund gestartet, das dauert einige Sekunden
+        self.pruefer = None  # Prüfgespräch der laufenden Runde, nur während der Prüfrunde
         self.runden = []
         self.laeuft = False
         self.beendet = False  # nach einem Fehler ist der Zustand des Modellprozesses unklar
@@ -168,13 +171,18 @@ def json_body(request_body, felder):
     return daten if isinstance(daten, dict) and all(isinstance(daten.get(k, t()), t) for k, t in felder) else None
 
 
-def erzeuge(e: Einstellungen, gespraech_fabrik=None):
+def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
     stand_iso, stand_deutsch = datenstand()
     anweisung = kontext.anweisung(lauf.APP / "katalog", lauf.APP / "wissen", stand_deutsch) \
         if gespraech_fabrik is None else ""
     if gespraech_fabrik is None:
         def gespraech_fabrik(cwd):
             return Gespraech(cwd, anweisung, zeitlimit=e.zeitlimit, direkt=e.direkt)
+
+        def pruefer_fabrik(cwd):
+            return Gespraech(cwd, anweisung + pruefung.PRUEFAUFTRAG, zeitlimit=e.zeitlimit, direkt=e.direkt)
+    elif pruefer_fabrik is None:
+        pruefer_fabrik = gespraech_fabrik
 
     ablage = ablage_modul.Ablage(e.ablage) if e.ablage else None
     pruefsumme = None
@@ -303,6 +311,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
             eintrag_runde = {
                 "nummer": nummer, "frage": runde["frage"], "zeit": runde["zeit"], "status": status,
                 "fehler": runde.get("fehler"), "verifizieren": runde.get("verifizieren"),
+                "pruefung": runde.get("pruefung"),
                 "antwort": runde.get("antwort"),
                 "antwort_modell": ergebnis.text if ergebnis and ergebnis.text != runde.get("antwort") else None,
                 "dateien": runde.get("dateien") or [],
@@ -317,9 +326,42 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
         if eintrag.speichern:
             sichern(eintrag)
 
+    def pruefe(eintrag, runde, text, beobachter):
+        """Prüfrunde in einem eigenen Gespräch im Unterverzeichnis `pruefung`. Liefert (endgültige Antwort, Ergebnis
+        für `pruefung`). Scheitert die Prüfung, bleibt die Antwort und die Seite zeigt einen Hinweis."""
+        beobachter.pruefung_beginnt()
+        start = time.monotonic()
+        verlauf = [(r["frage"], r.get("antwort") or "") for r in eintrag.runden[:-1] if r.get("antwort")]
+        cwd = eintrag.cwd / "pruefung"
+        try:
+            cwd.mkdir(exist_ok=True)
+            p = pruefer_fabrik(cwd)
+            with sperre:
+                eintrag.pruefer = p
+            try:
+                p.__enter__()
+                if eintrag.abbruch:
+                    raise Sitzungsfehler("Runde abgebrochen")
+                r = p.frage(pruefung.pruefauftrag_text(verlauf, runde["frage"], text),
+                            beobachter=lambda n: beobachter.ereignis(n, p._turn_id))
+            finally:
+                with sperre:
+                    eintrag.pruefer = None
+                p.__exit__(None, None, None)
+            urteil, neu, grund = pruefung.auswerten(r.text)
+        except Exception as fehl:  # noqa: BLE001, eine gescheiterte Prüfung verschlechtert die Antwort nie
+            urteil, neu, grund = "gescheitert", None, str(fehl)[:200]
+        ms = int((time.monotonic() - start) * 1000)
+        if urteil == "korrigiert" and neu:
+            return neu, {"status": "korrigiert", "hinweis": None, "ms": ms, "grund": grund}
+        if urteil == "bestätigt":
+            return text, {"status": "bestaetigt", "hinweis": None, "ms": ms, "grund": grund}
+        return text, {"status": "gescheitert", "ms": ms, "grund": grund,
+                      "hinweis": "The verification could not be completed, so this answer is unverified."}
+
     def beantworte(eintrag, runde):
         nummer = len(eintrag.runden)
-        beobachter = fortschritt.Fortschritt()
+        beobachter = fortschritt.Fortschritt(pruefen=bool(runde.get("verifizieren")))
         items = []  # abgeschlossene Items der Runde, auch für abgebrochene und gescheiterte Runden
         vorher = ablage_modul.dateistand(eintrag.cwd) if ablage else {}
         with sperre:
@@ -365,9 +407,16 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
             return
         if eintrag.abbruch:  # wer abbricht, will die Antwort nicht mehr, auch wenn sie schon stand
             return abgebrochen(ergebnis)
+        text, ergebnis_pruefung = ergebnis.text, None
+        if runde.get("verifizieren"):
+            text, ergebnis_pruefung = pruefe(eintrag, runde, text, beobachter)
+            if eintrag.abbruch:
+                return abgebrochen(ergebnis)
         protokolliere(eintrag, nummer, "fertig", ergebnis)
-        antwort, gemeldet = dateien.uebersetze(ergebnis.text, eintrag.cwd, eintrag.kennung)
+        antwort, gemeldet = dateien.uebersetze(text, eintrag.cwd, eintrag.kennung)
         with sperre:
+            if ergebnis_pruefung:
+                runde["pruefung"] = ergebnis_pruefung
             runde.update(antwort=antwort, dateien=gemeldet, ms=int(ergebnis.sekunden * 1000),
                          stufen=beobachter.stufen(fertig=True), schritte=beobachter.schritte)
             eintrag.laeuft, eintrag.fortschritt = False, None
@@ -438,8 +487,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
         s = hole_session(request)
         if s is None:
             return nicht_angemeldet()
-        # `verifizieren` wird später der optionale Prüfrunden-Schalter (README, Bauweise). Bis dahin angenommen
-        # und ignoriert, ebenso `schnell`. `speichern` ist der Schalter der Seite für die Beta-Ablage.
+        # `verifizieren` schaltet die Prüfrunde ein (pruefe), `schnell` wird angenommen und ignoriert. `speichern` ist der Schalter der Seite für die Beta-Ablage.
         daten = json_body(await request.body(), [("text", str), ("verifizieren", bool), ("schnell", bool),
                                                  ("speichern", bool)])
         if daten is None:
@@ -585,7 +633,9 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None):
                 return fehler(409, "Im Gespräch läuft keine Frage")
             eintrag.abbruch = marke
         try:
-            if eintrag.gespraech is not None and eintrag.gespraech.thread_id:
+            if eintrag.pruefer is not None and eintrag.pruefer.thread_id:
+                eintrag.pruefer.unterbrechen()
+            elif eintrag.gespraech is not None and eintrag.gespraech.thread_id:
                 eintrag.gespraech.unterbrechen()
         except (OSError, ValueError):
             pass

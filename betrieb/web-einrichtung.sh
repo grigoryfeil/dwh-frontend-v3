@@ -26,10 +26,32 @@ chown root:root "$zugang" && chmod 0600 "$zugang"
 sed -n 's/^passwort: //p' "$zugang" \
   | DWH_V3_KONTEN=$konten /opt/dwh-frontend-v3/venv/bin/python -I "$APP/web/konten.py" setzen grigory >/dev/null
 
+# Beta-Konto: der Tester aus V2 mit unverändertem Hash (argon2), also gleichem Passwort, einmalig übernommen
+python3 -I - "$konten" <<'PY'
+import json, os, sys
+pfad = sys.argv[1]
+try:
+    alt = json.load(open("/etc/dwh-frontend-v2/konten.json"))["konten"]["tester"]
+except (OSError, KeyError, ValueError):
+    sys.exit(0)
+konten = json.load(open(pfad))
+if "tester" not in konten:
+    konten["tester"] = {"hash": alt["hash"], "aktiv": True}
+    neu = pfad + ".neu"
+    open(neu, "w").write(json.dumps(konten, ensure_ascii=False, indent=1) + "\n")
+    st = os.stat(pfad); os.chown(neu, st.st_uid, st.st_gid); os.chmod(neu, 0o640); os.replace(neu, pfad)
+PY
+
+# Täglicher Selbsttest (06:30) über die öffentliche Adresse
+install -D -m 0644 -o root -g root "$quelle/betrieb/selbsttest.py" "$APP/betrieb/selbsttest.py"
+install -m 0644 -o root -g root "$quelle/betrieb/dwh-frontend-v3-selbsttest.service" \
+  "$quelle/betrieb/dwh-frontend-v3-selbsttest.timer" /etc/systemd/system/
+
 install -m 0644 -o root -g root "$quelle/betrieb/dwh-frontend-v3-web.service" /etc/systemd/system/
 systemd-analyze verify /etc/systemd/system/dwh-frontend-v3-web.service
 systemctl daemon-reload
 systemctl enable dwh-frontend-v3-web.service >/dev/null
+systemctl enable --now dwh-frontend-v3-selbsttest.timer >/dev/null
 systemctl restart dwh-frontend-v3-web.service
 
 # Zertifikat im webroot-Verfahren über den bestehenden Port-80-Server (acme-only), dann der vHost

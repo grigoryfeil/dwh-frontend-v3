@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 (08.11.2026)
+
+- Prüfrunde: Mit dem Schalter „Verify“ prüft ein unabhängiges zweites Gespräch die Antwort gegen die Daten, bevor sie angezeigt wird (rechnet Kernzahlen selbst nach, prüft Lesart und Abgrenzung). Korrekturen ersetzen die Antwort, eine gescheiterte Prüfung lässt sie mit Hinweis stehen. Nutzenprobe: 11/11 falsche Antworten korrigiert, 12/12 richtige bestätigt, im Mittel rund 45 s zusätzlich.
+- Beta: täglicher Selbsttest über die öffentliche Adresse (Timer 06:30, Protokoll `selbsttest.jsonl`), Auswertung der Beta-Ablage mit Vorschlägen für neue Referenzfälle (`betrieb/ablage-auswertung.py`).
+- Katalog: SAE-Standard der Abschlussquote aus 08b. Excel für das BI-Team mit Definitionen und 47 offenen Punkten (`handover/`).
+
+## 0.4.7 (08.11.2026)
+
+- Beta-Konto `tester` aus V2 übernommen (gleicher Hash, gleiches Passwort). Kontenprüfung versteht dafür auch argon2-Hashes.
+
 ## 0.4.6 (08.11.2026)
 
 - Antwort: SQL wird nie gezeigt, auch nicht auf ausdrücklichen Wunsch (Entscheidung Grigory). Stattdessen Beschreibung von Daten, Abgrenzungen und Rechenschritten in Worten.
