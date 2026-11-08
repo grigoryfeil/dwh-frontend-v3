@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 (08.11.2026)
+
+- SAE-Wissen an die Kennzahlvarianten angeglichen, Katalog mit älterer KPI-Tabelle aus Drive abgeglichen (08b hat Vorrang).
+- Wiederholungslauf 0.3.0: 9/11 Entwicklung, 10/11 zurückgehalten bestanden. Stabil verfehlt nur die Abbruchquote (Lesart).
+
 ## 0.3.0 (08.11.2026)
 
 - Katalog mit Quellenordnung: Thema, Eignung, Abdeckung, Beziehungen; Konversionsvarianten mit eigenen IDs (nach Codex-Zweitmeinung).
