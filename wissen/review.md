@@ -73,3 +73,17 @@ Tragend und unsicher, in dieser Reihenfolge:
 - Organisation, Standorte, Begriffe, Systeme und Ereignisse sind nicht Eintrag für Eintrag gegen die Rohfunde geprüft, nur die tragenden Aussagen.
 - Die Wiki-Seiten und der Umfragebericht August 2026 sind nicht am Original gelesen.
 - `bezug_ids` müssen nachgezogen werden, wenn sich IDs im Katalog ändern.
+
+## Dritte Runde: Kennzahlvarianten der Konversion (08.11.2026)
+
+Anlass ist die zweite Runde im Katalog (`katalog/review.md`): Die Konversion Opportunity zu Enrollment hat dort fünf Varianten mit eigenen Kennungen bekommen, dazu eine Widerspruchsliste zu Einträgen hier.
+
+- **Bezüge geändert (9 Einträge):** FUN-046 und FUN-047 verweisen jetzt auf `cr_opp_enrollment_bulletin` statt `kk.cr_opp_enrollment`, weil sie die Lesart des Weekly Bulletins beschreiben (Core auf alle Opportunities). FUN-060 verweist auf `opportunities_eingeschrieben` und `cr_opp_enrollment_bulletin` statt `kk.neueinschreibungen`, weil die Core-Einschreibungen des Wochenreports eingeschriebene Opportunities in Salesforce sind. Um `cr_opp_enrollment_bulletin` ergänzt: FUN-001, FUN-048, FUN-049 und FUN-050 (Pipeline Value rechnet mit der Bulletin-Rate). Um `cr_cockpit_enrolled` ergänzt: FUN-038. FUN-042 verweist neu auf `cr_kohorte_opp_enrollment` und `cr_cockpit_enrolled`.
+- **Korrektur nach Pflegeregel 3:** FUN-037 datierte die Cockpit-Stufen admitted und application auf „seit Oktober 2026“. Die Cockpit-Daten der Kopie führen admitted schon an früheren Ständen. FUN-037 ist `veraltet` mit Verweis, die neue Zeile FUN-071 nennt die Definitionen v1.2 vom 26.10.2026 ohne Beginndatum und bleibt `offen`. `gueltig_bis` bleibt leer, weil sich nicht der Sachverhalt geändert hat, sondern die Datierung falsch war.
+- **Übrige Prüfung:** `kk.cr_opp_enrollment` steht nur noch bei FUN-001 und FUN-048, die jede Stichtagslesart betreffen. Sonst meint kein Eintrag eine andere Variante unter dieser Kennung.
+- **Prüfung per Skript:** Alle `bezug_ids` existieren in `katalog/`. Außer den genannten Zellen ist keine Zeile verändert. 196 von 400 Einträgen haben einen Bezug.
+
+**Offen:**
+- Welche Lesart die SAE mit „Konversion Opportunity zu Enrollment“ meint, ist offene Frage 13 im Katalog. Die einzige SAE-Quelle im Wissen ist das Bulletin (FUN-046).
+- FUN-047 nennt eine Rate „mit Zertifikaten“ (Amsterdam 0925: 32,3 Prozent), für die der Katalog keine Kennung hat.
+- ZIE-005 (Opportunity-Ziel aus der mittleren Rate der letzten drei Intakes) und FUN-066 (Konversion nach Kanal laut Paid-Media-Auswertung) lassen nicht erkennen, welche Variante gemeint ist. Sie bleiben ohne Kennzahlbezug.
