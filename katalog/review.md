@@ -156,3 +156,29 @@ Alle Bezüge im SAE-Wissen verweisen auf vorhandene Katalogkennungen.
 13. **Welche Konversion ist gemeint?** Meint die SAE mit „Konversion Opportunity zu Enrollment“ die Rate je Produktkategorie (K6) oder die des Bulletins (Core auf alle Opportunities)? Die Kennzahlen v4 und das Bulletin weichen voneinander ab.
 14. **Verträge je Opportunity:** Gehören Top-ups, Zusatzverträge, Verlängerungen und Produktwechsel zur selben Grundgesamtheit wie die Opportunities? Erst dann ist das Verhältnis als Geschäftskennzahl lesbar.
 15. **Historische Opportunity-Zahlen:** Gibt es Endstände der Opportunities vor 0325 in Salesforce oder in den Wochen-Excel des Bulletins, die das DWH-Team liefern könnte? Ohne sie bleibt jede Konversionskurve auf fünf Intakes begrenzt.
+
+## Abgleich mit der älteren Tabelle „KPI Katalog“ (08.11.2026)
+
+**Die Quelle.** Google Sheet „KPI Katalog“ in Drive (BI-Team, angelegt 14.10.2025, zuletzt geändert 25.11.2025 von Christoph Graf, nur gelesen). Es ist ein Planungsentwurf für Dashboard-Kennzahlen mit Kommentaren und Gegenvorschlägen von Eeva zum Prognosemodell, kein abgestimmter Kennzahlenkatalog. Er enthält keine Zahlen und keine Bezüge auf DWH-Spalten, die Formeln sind allgemein („Count (Status = \"Lead\")“, Datenquelle „MariaDB“). Blatt 2 listet die 20 Diagramme des Salesforce-Dashboards „GSA - Detailed S&M Analytics“ von Daniel Cross mit Stand 29.10.2025. Das SAE-Wissen zitiert die Tabelle bereits als Drive „KPI Katalog“, BI (FUN-030, FUN-031, BEG-017). Bei Abweichungen gilt nach Regel des Nutzers 08b, Blatt Kennzahlen v4.
+
+**Übernommen.**
+
+- Vier fehlende Kennzahlen, alle `offen`: `cr_lead_enrollment` (Overall Conversion, Zeile 27), `dauer_lead_enrollment` (Time to Conversion, Zeile 28), `dauer_lead_opportunity` (Zeile 28 und Salesforce-Dashboard), `zielerreichung_prognose` (Target Achievement Rate, Zeile 6). Die Berechnungen sind in die Begriffe des Katalogs übersetzt, Zeitbezug und Grundgesamtheit legt die Quelle nicht fest.
+- Präzisiert: `no_shows` (Definition in Zeile 31 bestätigt, Zähleinheit dort Studenten), `pipeline_value` (SAE-Quelle für die Grundidee, Zeile 19), `leads_woche` und `tours` (weitere Namen „Funnel Velocity“, „Tour Volume“), `follow_up_je_lead` (verwandte ältere Lesarten), `zielerreichung` (Abgrenzung zur Prognosevariante), `prognose_kern_zum_start` und `input_predictions` (Hinweis auf die geplanten Prognosemodelle, als nicht belegt gekennzeichnet).
+
+**Abweichend von 08b, nur als ältere Lesart in `anmerkung`.**
+
+| Tabelle | Ältere Lesart | 08b (gilt) |
+|---|---|---|
+| Current Opportunities (Zeile 16) | aktive Opportunities, Status Opportunity | `kk.opportunities`: alle vier Zustände (K1) |
+| Current Enrollments (Zeile 17) | Salesforce-Status Enrolled | `kk.neueinschreibungen`: CAS-Verträge über das Census Date (K2) |
+| Current Leads (Zeile 15) | aktive Leads als Bestand | `kk.leads`: neue Leads im Zeitraum |
+| Lead → Opportunity Rate (Zeile 25) | Opportunities / Leads ohne Zeitfenster | `kk.cr_lead_opp`: Fenster von 120 Tagen aus `sales_cohort_persons` (K6) |
+| Opportunity → Enrollment Rate (Zeile 26) | Enrollments / Opportunities ohne Produktkategorie | `kk.cr_opp_enrollment`: je Produktkategorie (K6) |
+
+Diese Lesarten erklären, warum Berichte nach dem alten Entwurf andere Zahlen zeigen können, vor allem niedrigere Opportunity-Zahlen und Einschreibungen nach Salesforce statt CAS.
+
+**Verworfen.** Kennzahlen des Prognosemodells (Forecast Accuracy, Confidence Interval, Trend Direction, KW Target Achievement Rate), externe Faktoren (Demografie, Marktwachstum, Wettbewerb, Saison, Förderbudget) und Campus-Faktoren (Open Campus, Messen, Social Media, Werbung): Sie haben keine Daten in der Kopie oder sind Modellgrößen, keine Geschäftskennzahlen der SAE. Drop-Off Rate by Stage ist nur „100 minus Conversion Rate“, Activity Impact Score ein Regressionskoeffizient ohne Festlegung.
+
+**Für den Referenzsatz taugt die Tabelle nicht als Wertequelle**, weil sie keine Zahlen und keinen Datenstand hat. Brauchbar ist sie für Fragen in der Sprache der Fachseite (Overall Conversion, Time to Conversion, Target Achievement) und für den Fall „alter Bericht zeigt andere Zahl“. Als Wertequelle käme das auf Blatt 2 genannte Salesforce-Dashboard in Frage, wenn ein datierter Export vorliegt.
+
