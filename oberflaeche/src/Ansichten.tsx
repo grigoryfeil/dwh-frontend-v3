@@ -353,7 +353,9 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
   const gespraech = zug.gespraech ?? null;
   const a = useMemo(() => zerlege(text, gespraech), [text, gespraech]);
   const lang = sprache(text);
-  const meta = zug.fertig ? `${uhrzeit(zug.fertig)} · ${dauer(zug.fertig.getTime() - zug.zeit.getTime())}` : "";
+  const status = zug.runde?.pruefung?.status;
+  const vermerk = status === "bestaetigt" ? " · Verified" : status === "korrigiert" ? " · Corrected after verification" : "";
+  const meta = zug.fertig ? `${uhrzeit(zug.fertig)} · ${dauer(zug.fertig.getTime() - zug.zeit.getTime())}${vermerk}` : "";
 
   if (a.art === "keine" || a.art === "rueckfrage" || a.art === "kurzklaerung") {
     return (

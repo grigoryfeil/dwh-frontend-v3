@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 (08.11.2026)
+
+- Oberfläche: Die Kopfzeile einer geprüften Antwort zeigt „Verified“ oder „Corrected after verification“.
+
 ## 0.5.0 (08.11.2026)
 
 - Prüfrunde: Mit dem Schalter „Verify“ prüft ein unabhängiges zweites Gespräch die Antwort gegen die Daten, bevor sie angezeigt wird (rechnet Kernzahlen selbst nach, prüft Lesart und Abgrenzung). Korrekturen ersetzen die Antwort, eine gescheiterte Prüfung lässt sie mit Hinweis stehen. Nutzenprobe: 11/11 falsche Antworten korrigiert, 12/12 richtige bestätigt, im Mittel rund 45 s zusätzlich.
