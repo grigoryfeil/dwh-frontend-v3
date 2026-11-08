@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.5 (08.11.2026)
+
+- Antwortform: Zu einem Diagramm gehört immer eine Tabelle mit den dargestellten Werten (lesbar und prüfbar).
+- Referenzlauf 0.3.4: 21/24, kein zurückgehaltener Fall verfehlt; Konversionskurve in der Lesart des Vertriebsreports.
+
 ## 0.3.4 (08.11.2026)
 
 - Katalog: SAE-Standardlesart je Kennzahlfamilie (Spalten standard, standard_quelle), 7 Familien belegt, 4 offen; Konversion: Bulletin-Lesart als Standard, Ersatzquelle vor 0326.
