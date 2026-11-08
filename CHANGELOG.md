@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0 (08.11.2026)
+
+- Katalog mit Quellenordnung: Thema, Eignung, Abdeckung, Beziehungen; Konversionsvarianten mit eigenen IDs (nach Codex-Zweitmeinung).
+- Kontext: Anweisung mit Themenindex (2.700 statt 4.700 Wörter), Themenansichten aus Katalog und SAE-Wissen erzeugt.
+- Beta-Ablage der Gespräche (DWH_ABLAGE=1), Läufe sichern Werkzeugergebnisse vollständig.
+- Referenzsatz mit 22 Fällen (11 zurückgehalten) und deterministischem Vergleich. Erster Lauf: 8/11 Entwicklung, 9/11 zurückgehalten bestanden.
+
 ## 0.2.0 (08.11.2026)
 
 - Oberfläche von Claude Design unverändert übernommen und über ein schlankes Backend (`web/`) an den Harness angebunden: Gespräche mit Nachfragen, Fortschritt, Login, Diagramme aus dem Gesprächsverzeichnis.
