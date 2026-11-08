@@ -8,6 +8,11 @@ cli_auth_credentials_store = "file"
 default_permissions = "dwhv3"
 web_search = "disabled"
 
+# Umgebung der Modell-Shell: Node und python im Pfad, Node-Unterprozesse ohne Eingabe-Pipe (siehe
+# betrieb/umgebung/spawn-ohne-eingabe-pipe.cjs). Behebt Fehlversuche, die in jedem Dashboard-Gespräch auftraten.
+[shell_environment_policy]
+set = { PATH = "/opt/dwh-frontend-v3/umgebung/bin:/opt/dwh-frontend-v3/node/bin:/usr/local/bin:/usr/bin:/bin", NODE_OPTIONS = "--require /opt/dwh-frontend-v3/umgebung/spawn-ohne-eingabe-pipe.cjs" }
+
 [analytics]
 enabled = false
 

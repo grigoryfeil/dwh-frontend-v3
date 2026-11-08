@@ -26,6 +26,11 @@ node=$(readlink -f "$V2/node")
 ln -sfn "$(basename "$node")" /opt/dwh-frontend-v3/node
 chown -R root:root /opt/dwh-frontend-v3/codex "/opt/dwh-frontend-v3/$(basename "$node")"
 
+# Umgebung der Modell-Shell: Vorlade-Datei für Node, python als Name für python3.
+install -d -m 0755 -o root -g root /opt/dwh-frontend-v3/umgebung /opt/dwh-frontend-v3/umgebung/bin
+install -m 0644 -o root -g root "$quelle/betrieb/umgebung/spawn-ohne-eingabe-pipe.cjs" /opt/dwh-frontend-v3/umgebung/
+ln -sfn /usr/bin/python3 /opt/dwh-frontend-v3/umgebung/bin/python
+
 # Login und Plugin-Cache einmalig aus V2 übernehmen.
 if [[ ! -e $H/auth.json ]]; then
   cp -a /var/lib/dwh-frontend-v2-codex/codex-home/{auth.json,installation_id,plugins,cache} "$H/"

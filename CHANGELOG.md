@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 (08.11.2026)
+
+- Dashboards als Ausgabeformat: abgeschottete Anzeige in der Oberfläche, Zeitlimit 25 Minuten, drei Dashboard-Prüffälle.
+- Umgebung der Modell-Shell: Node-Unterprozesse ohne Eingabe-Pipe (behebt EPERM im Data-App-Build), Node und python im Pfad, Umgebungsangabe in der Anweisung (kein Netz, kein Browser, Offline-HTML).
+- Läufe protokollieren den Zeitpunkt jedes Schritts.
+
 ## 0.3.5 (08.11.2026)
 
 - Antwortform: Zu einem Diagramm gehört immer eine Tabelle mit den dargestellten Werten (lesbar und prüfbar).
