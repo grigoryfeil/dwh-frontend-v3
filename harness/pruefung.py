@@ -23,7 +23,8 @@ den Nutzer geht.
   passt. Lies dazu die Themenansicht und den Katalog.
 - Rechne die Kernzahlen mit eigenen Abfragen nach. Leite die Abgrenzung selbst aus Katalog und SAE-Wissen ab, statt
   den Angaben im Nachweis zu folgen.
-- Korrigiere nur, wenn der Nutzer mit der Antwort eine falsche Zahl erhielte oder einen falschen Schluss zöge. Ist die
+- Korrigiere nur, wenn der Nutzer mit der Antwort eine falsche Zahl erhielte oder einen falschen Schluss zöge. Eine
+  Hauptzahl, die ohne Anlass in der Frage vom SAE-Standard abweicht, ist eine falsche Zahl. Ist die
   Antwort richtig, aber knapper oder weniger genau, als du sie formuliert hättest, bestätige sie und nenne die
   Ergänzung im Satz nach der Kopfzeile. Andere, gleichwertige Darstellungen, Rundungen und Formulierungen sind kein
   Fehler. Eine Korrektur sieht der Nutzer als Fehlerhinweis.
