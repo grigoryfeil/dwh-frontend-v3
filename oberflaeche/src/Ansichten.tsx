@@ -103,7 +103,7 @@ export function Login(props: { meta: string; meldung: string; onAnmelden: (email
 
 // Rahmen
 
-export function Kopf(props: { speichert: boolean; onBeispiele: () => void; onBeta: () => void; onExport: () => void; onReset: () => void }) {
+export function Kopf(props: { speichert: boolean; onBeispiele: () => void; onBeta: () => void; onExport: () => void; onReset: () => void; onAbmelden: () => void }) {
   return (
     <header className="kopf">
       <div className="kopf-links">
@@ -130,6 +130,9 @@ export function Kopf(props: { speichert: boolean; onBeispiele: () => void; onBet
         <button className="textknopf" onClick={props.onBeta}>
           <span className="lang">Beta features</span>
           <span className="kurz">Beta</span>
+        </button>
+        <button className="textknopf" onClick={props.onAbmelden}>
+          Sign out
         </button>
       </div>
     </header>

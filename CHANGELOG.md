@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.5 (09.11.2026)
+
+- Oberfläche: Knopf „Sign out“ ganz rechts in der Menüleiste. Er beendet die Session auf dem Server samt ihrer offenen Gespräche (vorhandene Route `/api/abmelden`) und führt zur Anmeldung mit dem Hinweis „You have signed out.“. In der Beta-Ablage gespeicherte Gespräche bleiben.
+
 ## 0.6.4 (09.11.2026)
 
 - Sprache: Lässt eine Frage keine Sprache erkennen (nur Zahlen oder Zeichen), antwortet das Modell in der Sprache des bisherigen Gesprächs, zu Beginn auf Englisch wie die Oberfläche. Vorher kam auf eine reine Zeichenfolge eine deutsche Antwort. Kein Schalter, eine Regel in `harness/anweisung.md`. Probe `fragen/sprache-rueckfall.json`: reine Zeichenfolge englisch, Nachfrage „2025?“ bleibt im englischen und im deutschen Gespräch in dessen Sprache.

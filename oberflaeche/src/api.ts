@@ -57,6 +57,7 @@ const json = (body: unknown): RequestInit => ({
 export const info = async (): Promise<Info> => (await anfrage("/api/stand")).json();
 export const ich = async (): Promise<{ email: string; ablage: boolean }> => (await anfrage("/api/ich")).json();
 export const anmelden = async (email: string, passwort: string) => (await anfrage("/api/anmelden", json({ email, passwort }))).json();
+export const abmelden = () => anfrage("/api/abmelden", json({}));
 export type Optionen = { verifizieren: boolean; speichern: boolean };
 export const fragen = async (text: string, gespraech: string | null, optionen: Optionen): Promise<{ gespraech: string }> =>
   (await anfrage("/api/fragen", json({ text, gespraech, ...optionen }))).json();

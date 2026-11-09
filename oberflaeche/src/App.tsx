@@ -294,6 +294,18 @@ export default function App() {
     if (kennung) void aufraeumen(kennung, laeuftNoch);
   }
 
+  // Abmelden beendet die Session auf dem Server samt ihrer Gespräche, gespeicherte Gespräche der Beta-Ablage bleiben.
+  async function abmelden() {
+    try {
+      await api.abmelden();
+    } catch (e) {
+      if (!(e instanceof Abgemeldet)) return zeigeToast("Sign-out failed", "Please try again.");
+    }
+    allesLeeren();
+    setLoginMeldung("You have signed out.");
+    setPhase("login");
+  }
+
   async function anmelden(email: string, passwort: string): Promise<string | null> {
     try {
       await api.anmelden(email, passwort);
@@ -334,6 +346,7 @@ export default function App() {
             setMenue(null);
             setDialog(true);
           }}
+          onAbmelden={abmelden}
         />
         {banner && <Banner />}
         {zuege.length === 0 ? (
