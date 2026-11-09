@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.4 (09.11.2026)
+
+- Sprache: Lässt eine Frage keine Sprache erkennen (nur Zahlen oder Zeichen), antwortet das Modell in der Sprache des bisherigen Gesprächs, zu Beginn auf Englisch wie die Oberfläche. Vorher kam auf eine reine Zeichenfolge eine deutsche Antwort. Kein Schalter, eine Regel in `harness/anweisung.md`. Probe `fragen/sprache-rueckfall.json`: reine Zeichenfolge englisch, Nachfrage „2025?“ bleibt im englischen und im deutschen Gespräch in dessen Sprache.
+
 ## 0.6.3 (09.11.2026)
 
 Zweite Prüfung durch Codex Astra (`handover/2026-11-09-zweitmeinung-haertung-review-ergebnis.md`): Befunde zu den Änderungen aus 0.6.0 behoben.
