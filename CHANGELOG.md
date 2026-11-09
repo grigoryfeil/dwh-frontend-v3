@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.6 (09.11.2026)
+
+- Katalog und Wissen: Antworten von C. Graf (BI-Team, 09.11.2026) auf die 13 Lücken des BI-Excels und die Änderungen des Objektindex 08c eingearbeitet (Commit 0d74651). Neun Kennzahlen bestätigt oder abgegrenzt, `cr_lead_enrollment` und `pipeline_value` neu definiert, `dauer_lead_enrollment` entfallen, `follow_up_quote` als offene Lücke. Studienverlauf (obt-Objekte) mit der Kollegin geklärt: Quelle bleibt `obt_outcomes`, Werte zum Baudatum. Offen bleiben Nichtabschlussquote, Prognoseformel, Definition Opportunity (Salesteam), P4 und die Nachlieferungen des DWH-Teams (Follow-up, Preise, Opportunities vor 0325).
+
 ## 0.6.5 (09.11.2026)
 
 - Oberfläche: Knopf „Sign out“ ganz rechts in der Menüleiste. Er beendet die Session auf dem Server samt ihrer offenen Gespräche (vorhandene Route `/api/abmelden`) und führt zur Anmeldung mit dem Hinweis „You have signed out.“. In der Beta-Ablage gespeicherte Gespräche bleiben.
