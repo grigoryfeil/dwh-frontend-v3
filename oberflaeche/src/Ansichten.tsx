@@ -1,5 +1,5 @@
 // Bildschirme und Bausteine nach Richtung A. Zustand und Abläufe liegen in App.tsx.
-import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type Ref } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type ReactNode, type Ref } from "react";
 import logo from "./assets/sae-solo-grey.svg";
 import { dashboardTitel, type Datei, type Runde, type Stufe } from "./api";
 import { inline, sprache, zerlege, type Beleg, type Lesart } from "./antwort";
@@ -297,13 +297,11 @@ export function ArbeitAbschnitt(props: { zug: Zug; sekunden: number; onAbbrechen
         </button>
       </div>
       <div className="spalte arbeit">
-        <div className="satz" aria-hidden="true">
-          {[100, 94, 98, 71, 90, 96, 58].map((w, i) => (
-            <i key={i} style={{ width: `${w}%`, animationDelay: `${i * 0.24}s` }} />
-          ))}
+        <div className="laeuft" aria-hidden="true">
+          <span />
         </div>
         <div className="arbeit-spalten">
-          <div className="stufen" aria-label="Stages">
+          <Rolle className="stufen" label="Stages" anzahl={stufen.length}>
             {stufen.map((s, i) => (
               <div key={s.stufe} className={`stufe ${s.status}`}>
                 <span className="nr">{nr(i + 1)}</span>
@@ -312,15 +310,17 @@ export function ArbeitAbschnitt(props: { zug: Zug; sekunden: number; onAbbrechen
                 <span className="st">{STATUS[s.status]}</span>
               </div>
             ))}
-          </div>
-          <div className="schritte" aria-live="polite">
+          </Rolle>
+          <div className="schritte">
             <b>Analyst’s steps</b>
-            {schritte.map((s, i) => (
-              <div key={`${i}-${s.text}`} className="schritt">
-                <span>{laufzeit(s.s)}</span>
-                <span>{s.text}</span>
-              </div>
-            ))}
+            <Rolle className="schritt-liste" label="Analyst’s steps" anzahl={schritte.length} live>
+              {schritte.map((s, i) => (
+                <div key={`${i}-${s.text}`} className="schritt">
+                  <span>{laufzeit(s.s)}</span>
+                  <span>{s.text}</span>
+                </div>
+              ))}
+            </Rolle>
           </div>
         </div>
         <div className="arbeit-hinweis">
@@ -329,6 +329,38 @@ export function ArbeitAbschnitt(props: { zug: Zug; sekunden: number; onAbbrechen
         </div>
       </div>
     </section>
+  );
+}
+
+// Liste mit fester Höchsthöhe: Neue Einträge erscheinen unten und bleiben im Blick, ältere wandern nach oben und
+// blenden dort aus. Wer selbst nach oben rollt, liest in Ruhe, bis er wieder unten ist.
+function Rolle(props: { className: string; label: string; anzahl: number; live?: boolean; children: ReactNode }) {
+  const feld = useRef<HTMLDivElement>(null);
+  const folgen = useRef(true);
+  const [oben, setOben] = useState(false);
+  useEffect(() => {
+    const f = feld.current;
+    if (!f || !folgen.current) return;
+    const ruhig = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    f.scrollTo?.({ top: f.scrollHeight, behavior: ruhig ? "auto" : "smooth" });
+  }, [props.anzahl]);
+  function gerollt() {
+    const f = feld.current;
+    if (!f) return;
+    folgen.current = f.scrollTop + f.clientHeight >= f.scrollHeight - 8;
+    setOben(f.scrollTop > 4);
+  }
+  return (
+    <div
+      ref={feld}
+      className={`rolle ${props.className}${oben ? " ausblenden" : ""}`}
+      aria-label={props.label}
+      aria-live={props.live ? "polite" : undefined}
+      tabIndex={0}
+      onScroll={gerollt}
+    >
+      {props.children}
+    </div>
   );
 }
 

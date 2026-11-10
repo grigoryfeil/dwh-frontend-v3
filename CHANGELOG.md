@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.2 (10.11.2026)
+
+- Oberfläche, Arbeitsanzeige während eine Antwort entsteht (Wunsch Grigory, Variante B aus drei Entwürfen):
+  - Statt sieben Platzhalterzeilen eine Haarlinie, auf der ein glühender oranger Punkt mit weicher Lichtspur ruhig hin und her gleitet (9 s für hin und zurück). Bei „Bewegung reduzieren“ ruht er.
+  - Stufen und Analystenschritte stehen in gleich hohen Rolllisten (216 px). Neue Schritte erscheinen unten, ältere wandern nach oben und blenden dort aus, mit dezenter Scrollbar. Wer selbst nach oben rollt, liest in Ruhe, bis er wieder unten ist.
+  - Stufen etwas dichter (30 px), die Trennlinie zwischen Stufen und Schritten entfällt.
+- Prototyp der drei Varianten auf dem Zweig `prototyp/arbeitsanzeige`, nicht in `main`.
+- Tests: `oberflaeche/src/Arbeit.test.tsx`, 3 neue. Oberfläche zusammen 32.
+
 ## 0.7.1 (10.11.2026)
 
 - PDF-Export: Zeichen, die die Schrift IBM Plex (nur Latin-1) nicht enthält, etwa „→“, „≥“, „Š“ oder „Ł“, erschienen als Kästchen. Sie stehen jetzt in DejaVu Sans, die auf dem VPS installiert ist. Aufgefallen im Probe-Export echter Antworten („Opportunity → Enrollment“). Test in `tests/test_export.py`, er läuft nur, wo DejaVu vorhanden ist.

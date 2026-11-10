@@ -44,7 +44,22 @@ textarea::placeholder, input::placeholder { color: var(--placeholder); }
 button { font: inherit; color: inherit; }
 [hidden] { display: none !important; }
 
-@keyframes dd-set { 0% { transform: scaleX(0); opacity: 1 } 38% { transform: scaleX(1); opacity: 1 } 78% { transform: scaleX(1); opacity: 1 } 100% { transform: scaleX(1); opacity: 0 } }
+/* Lichtspur: hin und zurück in 9 s, je Weg weich an- und abgebremst. left statt transform, damit nichts übersteht */
+@keyframes dd-hin-her {
+  0% { left: 0; animation-timing-function: cubic-bezier(.45, 0, .55, 1) }
+  50% { left: calc(100% - 7px); animation-timing-function: cubic-bezier(.45, 0, .55, 1) }
+  100% { left: 0 }
+}
+/* Schweif hinter dem Punkt: wächst zur Mitte des Wegs, verschwindet an den Enden, wechselt mit der Richtung die Seite */
+.laeuft { --hin: linear-gradient(to right, transparent, rgba(255, 105, 0, .55)); --her: linear-gradient(to left, transparent, rgba(255, 105, 0, .55)); }
+@keyframes dd-schweif {
+  0% { left: -96px; background: var(--hin); transform-origin: right center; transform: scaleX(0) }
+  25% { left: -96px; background: var(--hin); transform-origin: right center; transform: scaleX(1) }
+  49.9% { left: -96px; background: var(--hin); transform-origin: right center; transform: scaleX(0) }
+  50% { left: 7px; background: var(--her); transform-origin: left center; transform: scaleX(0) }
+  75% { left: 7px; background: var(--her); transform-origin: left center; transform: scaleX(1) }
+  100% { left: 7px; background: var(--her); transform-origin: left center; transform: scaleX(0) }
+}
 @keyframes dd-in { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }
 @keyframes dd-fade { from { opacity: 0 } to { opacity: 1 } }
 @media (prefers-reduced-motion: reduce) {
@@ -237,11 +252,24 @@ button { font: inherit; color: inherit; }
 .arbeit-rand small { font-size: 12px; line-height: 16px; color: var(--text-3); }
 .arbeit-rand .unterstrichen { align-self: flex-start; margin-top: 16px; }
 .arbeit { display: flex; flex-direction: column; gap: 40px; }
-.satz { padding-top: 8px; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 560px; }
-.satz i { display: block; height: 2px; background: var(--ink); transform-origin: left center; animation: dd-set 3.8s cubic-bezier(.45, 0, .2, 1) infinite both; }
+/* Indikator: eine Haarlinie, auf der ein glühender Punkt mit Lichtspur ruhig hin und her gleitet */
+.laeuft { position: relative; height: 1px; margin: 12px 0 4px; background: var(--rule); overflow-x: clip; }
+.laeuft span { position: absolute; left: 0; top: 0; width: 7px; height: 1px; animation: dd-hin-her 9s infinite; }
+.laeuft span::before {
+  content: ""; position: absolute; left: 0; top: -3px; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--orange); box-shadow: 0 0 10px 2px rgba(255, 105, 0, .45);
+}
+.laeuft span::after { content: ""; position: absolute; top: -1px; width: 96px; height: 3px; border-radius: 2px; animation: dd-schweif 9s infinite; }
+/* Stufen und Schritte gleich hoch (sieben Stufen), darüber rollt die Liste und blendet oben aus */
+.rolle { max-height: 216px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--leader) transparent; outline: none; }
+.rolle::-webkit-scrollbar { width: 4px; }
+.rolle::-webkit-scrollbar-thumb { background: var(--leader); border-radius: 2px; }
+.rolle::-webkit-scrollbar-track { background: transparent; }
+.rolle:focus-visible { box-shadow: 0 0 0 1px var(--rule); }
+.rolle.ausblenden { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 64px); mask-image: linear-gradient(to bottom, transparent 0, #000 64px); }
 .arbeit-spalten { display: flex; flex-wrap: wrap; gap: 40px 48px; }
-.stufen { flex: 1 1 280px; display: flex; flex-direction: column; }
-.stufe { display: flex; align-items: baseline; gap: 12px; height: 36px; font-size: 14px; }
+.stufen { flex: 1 1 280px; display: flex; flex-direction: column; padding-right: 8px; }
+.stufe { display: flex; align-items: baseline; gap: 12px; height: 30px; font-size: 14px; }
 .stufe .nr { font-size: 12px; width: 20px; color: var(--text-3); }
 .stufe .leiter { flex: 1; transform: translateY(-4px); }
 .stufe .st { font-size: 12px; }
@@ -253,8 +281,10 @@ button { font: inherit; color: inherit; }
 .stufe.offen, .stufe.uebersprungen, .stufe.offen .nr, .stufe.uebersprungen .nr { color: var(--placeholder); }
 .stufe.uebersprungen .label { text-decoration: line-through; }
 .stufe.uebersprungen .leiter { border-bottom: 1px dotted var(--rule); }
-.schritte { flex: 1 1 280px; display: flex; flex-direction: column; border-left: 1px solid var(--rule); padding-left: 24px; }
+.schritte { flex: 1 1 280px; display: flex; flex-direction: column; }
 .schritte b { font-size: 12px; line-height: 20px; font-weight: 600; margin-bottom: 8px; }
+.schritt-liste { max-height: 188px; padding-right: 8px; } /* mit Überschrift so hoch wie die Stufen */
+.schritt-liste .schritt { animation-name: dd-fade; } /* ohne Versatz: der zählte zur Höhe und zeigte schon bei einem Schritt eine Scrollbar */
 .schritt { display: flex; gap: 16px; font-size: 13px; line-height: 24px; animation: dd-in .5s cubic-bezier(.2, 0, 0, 1) both; }
 .schritt span:first-child { flex: 0 0 32px; color: var(--text-3); font-size: 12px; }
 .schritt span:last-child { color: var(--text-body); }
