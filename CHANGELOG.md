@@ -4,7 +4,7 @@
 
 Beta-Release für die Tester (Freigabe Grigory, 10.11.2026). Enthält alles bis 0.7.5: Export als PDF und Excel, Arbeitsanzeige mit Lichtspur, UI-Review.
 
-- Oberfläche: Im Fenster „Beta features“ öffnet der Eintrag „Changelog“ die Änderungen für die Tester, englisch und getrennt von dieser Datei (`oberflaeche/src/neuigkeiten.ts`). Erster Eintrag: „0.8.0 · 10 November 2026 · Beta release for testing“. Neue Einträge oben, nur was Tester sehen oder bemerken.
+- Oberfläche: Im Fenster „Beta features“ öffnet der Eintrag „Changelog“ die Änderungen für die Tester, englisch und getrennt von dieser Datei (`oberflaeche/src/neuigkeiten.ts`). Erster Eintrag: „0.8.0 · 10 November 2026 · Beta release for testing“ mit einem Satz zum Umfang (auf Grigorys Wunsch gekürzt). Die Liste rollt ab 360 px. Neue Einträge oben, nur was Tester sehen oder bemerken.
 - Tests: `oberflaeche/src/Beta.test.tsx`, 2 neue. Oberfläche zusammen 39.
 
 ## 0.7.5 (10.11.2026)

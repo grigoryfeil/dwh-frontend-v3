@@ -7,9 +7,6 @@ export const NEUIGKEITEN: Neuigkeit[] = [
     version: "0.8.0",
     datum: "10 November 2026",
     titel: "Beta release for testing",
-    text:
-      "First version of SAE Data Desk for beta testers. Ask questions about students, enrolments, the sales funnel and " +
-      "study progress in plain language, follow up in the same conversation, check answers with Verify and export " +
-      "them as a PDF report or Excel file.",
+    text: "First version for beta testers: questions in plain language, follow-ups, Verify, and export as PDF or Excel.",
   },
 ];
