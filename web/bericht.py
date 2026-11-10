@@ -52,6 +52,27 @@ FUSS_LINIE = px(72)
 for _schnitt in (300, 400, 500, 600):
     pdfmetrics.registerFont(TTFont(f"Plex{_schnitt}", str(DRUCK / f"IBMPlexSans-{_schnitt}.ttf")))
 pdfmetrics.registerFontFamily("Plex400", normal="Plex400", bold="Plex600", italic="Plex400", boldItalic="Plex600")
+# IBM Plex liegt hier nur mit Latin-1 vor. Was fehlt (Pfeile, ≥, Š, Ł …), setzt _schrift in DejaVu Sans, wenn das
+# System sie hat (VPS: fonts-dejavu-core), sonst bleibt das Zeichen ein Kästchen.
+PLEX = set(TTFont("PlexZeichen", str(DRUCK / "IBMPlexSans-400.ttf")).face.charToGlyph)
+ERSATZ = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf")
+if ERSATZ.exists():
+    pdfmetrics.registerFont(TTFont("Ersatz", str(ERSATZ)))
+FEHLT = re.compile(r"[^\x00-\x7f]+")
+
+
+def _schrift(markup):
+    """Setzt Zeichen, die IBM Plex nicht hat, in die Ersatzschrift. Tags und Entities sind ASCII und bleiben."""
+    if not ERSATZ.exists():
+        return markup
+
+    def ersetze(m):
+        return "".join(f'<font name="Ersatz">{c}</font>' if ord(c) not in PLEX else c for c in m[0])
+    return FEHLT.sub(ersetze, markup)
+
+
+def P(text, stil, **mehr):
+    return Paragraph(_schrift(text), stil, **mehr)
 
 
 def _stil(name, groesse, zeile, schnitt=400, farbe=INK, **mehr):
@@ -153,8 +174,8 @@ def pdf(zuege, datenstand, version, heute):
 
     anzahl = len(zuege)
     menge = f"{ZAHLWORT[anzahl] if anzahl < len(ZAHLWORT) else anzahl} question{'s' if anzahl != 1 else ''}"
-    teile = [Paragraph("Conversation report", TITEL), Spacer(1, px(8)),
-             Paragraph(escape(f"{menge} · {datum_lang(heute)} · {stand}Version {version}"), META),
+    teile = [P("Conversation report", TITEL), Spacer(1, px(8)),
+             P(escape(f"{menge} · {datum_lang(heute)} · {stand}Version {version}"), META),
              Spacer(1, px(32))]
     for nummer, zug in enumerate(zuege, start=1):
         kopf, rest = _runde(nummer, zug)
@@ -180,29 +201,29 @@ def _zeile(rand, inhalt):
 def _runde(nummer, zug):
     a = zerlege(zug["antwort"], zug["gespraech"])
     teile = [HRFlowable(width="100%", thickness=px(1), color=INK, spaceBefore=0, spaceAfter=px(16)),
-             _zeile([Paragraph(f"Question {nummer:02d}", RANDLABEL), Paragraph(escape(zug["zeit"]), RANDZEIT)],
-                    Paragraph(escape(zug["frage"]), FRAGE)),
+             _zeile([P(f"Question {nummer:02d}", RANDLABEL), P(escape(zug["zeit"]), RANDZEIT)],
+                    P(escape(zug["frage"]), FRAGE)),
              Spacer(1, px(14))]
     if a["art"] == "antwort":
         if a["lead"]:
-            teile.append(_zeile(Paragraph("Answer", RANDLABEL), Paragraph(a["lead"], LEAD)))
+            teile.append(_zeile(P("Answer", RANDLABEL), P(a["lead"], LEAD)))
             teile.append(Spacer(1, px(12)))
         innen = _kennzahlen(a["kennzahlen"]) if a["kennzahlen"] else []
     else:
-        teile.append(_zeile(Paragraph({"keine": "Answer", "kurzklaerung": "Before building"}.get(a["art"], "Clarification"),
+        teile.append(_zeile(P({"keine": "Answer", "kurzklaerung": "Before building"}.get(a["art"], "Clarification"),
                                       RANDLABEL),
-                            Paragraph(a["titel"], LEAD_TITEL)))
+                            P(a["titel"], LEAD_TITEL)))
         teile.append(Spacer(1, px(12)))
         innen = []
     innen += [f for b in a["bloecke"] for f in _block(b, zug)]
     if a["art"] in ("rueckfrage", "kurzklaerung"):
-        innen += [Paragraph(escape(o), PUNKT, bulletText="–") for o in a["optionen"]]
+        innen += [P(escape(o), PUNKT, bulletText="–") for o in a["optionen"]]
 
     p = zug.get("pruefung") or {}
     if p.get("status") in ("hinweis", "gescheitert") and p.get("hinweis"):
         innen += _hinweis(zerlege(p["hinweis"], zug["gespraech"]))
     elif p.get("status") in VERIFY:
-        innen += [Paragraph(VERIFY[p["status"]], KLEIN), Spacer(1, px(8))]
+        innen += [P(VERIFY[p["status"]], KLEIN), Spacer(1, px(8))]
     gezeigt = {b["name"] for b in a["bloecke"] if b["typ"] == "bild"}
     andere = []
     for name in zug["dateien"]:
@@ -213,7 +234,7 @@ def _runde(nummer, zug):
         elif not BILD.search(name):
             andere.append(name)
     if andere:
-        innen.append(Paragraph("<b>Files</b> " + escape(" · ".join(andere)), KLEIN))
+        innen.append(P("<b>Files</b> " + escape(" · ".join(andere)), KLEIN))
     if not innen:
         return teile, []
     return teile + [Indenter(left=RANDSPALTE), innen[0]], [*innen[1:], Indenter(left=-RANDSPALTE)]
@@ -231,8 +252,8 @@ def _kennzahlen(kennzahlen):
             if k["einheit"] else ""
         zellen.append([HRFlowable(width=breite, thickness=px(1), color=RULE, spaceBefore=0, spaceAfter=px(6),
                                   hAlign="LEFT"),
-                       Paragraph(f'{escape(k["wert"])}{einheit}', _stil("kz", 28, 32, 300)),
-                       Spacer(1, px(4)), Paragraph(k["label"], KZ_LABEL)])
+                       P(f'{escape(k["wert"])}{einheit}', _stil("kz", 28, 32, 300)),
+                       Spacer(1, px(4)), P(k["label"], KZ_LABEL)])
     reihen = [zellen[i:i + spalten] for i in range(0, len(zellen), spalten)]
     reihen[-1] += [""] * (spalten - len(reihen[-1]))
     tabelle = Table(reihen, colWidths=[breite + luecke] * (spalten - 1) + [breite])
@@ -244,14 +265,14 @@ def _kennzahlen(kennzahlen):
 
 def _block(b, zug):
     if b["typ"] == "absatz":
-        return [Paragraph(b["text"], ABSATZ)]
+        return [P(b["text"], ABSATZ)]
     if b["typ"] == "ueberschrift":
-        return [Paragraph(b["text"], UEBERSCHRIFT)]
+        return [P(b["text"], UEBERSCHRIFT)]
     if b["typ"] == "liste":
-        return [Paragraph(t, PUNKT, bulletText=f"{i}." if b["nummeriert"] else "–")
+        return [P(t, PUNKT, bulletText=f"{i}." if b["nummeriert"] else "–")
                 for i, t in enumerate(b["punkte"], start=1)] + [Spacer(1, px(6))]
     if b["typ"] == "code":
-        return [Paragraph(escape(b["text"]).replace("\n", "<br/>"), CODE)]
+        return [P(escape(b["text"]).replace("\n", "<br/>"), CODE)]
     if b["typ"] == "tabelle":
         return [_tabelle(b), Spacer(1, px(12))]
     if b["typ"] == "bild":
@@ -273,7 +294,7 @@ def _tabelle(b):
         for s in range(spalten):
             text = escape(zeile[s]) if s < len(zeile) else ""
             stil = (KOPFZELLE_ZAHL if zahlen[s] else KOPFZELLE) if r == 0 else (ZELLE_ZAHL if zahlen[s] else ZELLE)
-            reihe.append(Paragraph(text, stil))
+            reihe.append(P(text, stil))
         daten.append(reihe)
     tabelle = Table(daten, colWidths=breiten, repeatRows=1)
     tabelle.setStyle(TableStyle([
@@ -295,7 +316,7 @@ def _bild(name, zug):
         if breite * hoehe > 40_000_000:
             raise ValueError("zu groß")
     except Exception:  # noqa: BLE001, jede kaputte Datei des Modells wird Text
-        return [Paragraph("<b>Chart</b> " + escape(name), KLEIN), Spacer(1, px(8))]
+        return [P("<b>Chart</b> " + escape(name), KLEIN), Spacer(1, px(8))]
     massstab = min(TEXTBREITE / breite, px(340) / hoehe)
     return [Image(io.BytesIO(inhalt), width=breite * massstab, height=hoehe * massstab, hAlign="LEFT"),
             Spacer(1, px(12))]
@@ -309,9 +330,9 @@ def _dashboard(name, zug):
         if treffer:
             titel = " ".join(treffer[1].decode("utf-8", "replace").split())[:120] or None
     titel = titel or titel_aus_name(name)
-    kasten = Table([[[Paragraph("Chart or dashboard", KLEIN), Paragraph(escape(titel), KASTEN_TITEL),
+    kasten = Table([[[P("Chart or dashboard", KLEIN), P(escape(titel), KASTEN_TITEL),
                       Spacer(1, px(4)),
-                      Paragraph(escape(f"“{titel}” is interactive and not part of the printed report. "
+                      P(escape(f"“{titel}” is interactive and not part of the printed report. "
                                        "Open it in Data Desk while the conversation is still open."), KLEIN)]]],
                    colWidths=[TEXTBREITE])
     kasten.setStyle(TableStyle([("BOX", (0, 0), (-1, -1), px(1), RULE), ("LEFTPADDING", (0, 0), (-1, -1), px(16)),
@@ -332,7 +353,7 @@ def _hinweis(a):
         text = " ".join([a["lead"]] + [b["text"] for b in a["bloecke"] if b["typ"] == "absatz"]).strip()
     else:
         text = a["titel"]
-    notiz = Table([[[Paragraph("Note after verification", NOTIZ_LABEL), Spacer(1, px(4)), Paragraph(text, NOTIZ)]]],
+    notiz = Table([[[P("Note after verification", NOTIZ_LABEL), Spacer(1, px(4)), P(text, NOTIZ)]]],
                   colWidths=[TEXTBREITE])
     notiz.setStyle(TableStyle([("LINEABOVE", (0, 0), (-1, 0), px(1), INK), ("LINEBELOW", (0, -1), (-1, -1), px(1), RULE),
                                ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),

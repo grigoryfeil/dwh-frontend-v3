@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 (10.11.2026)
+
+- PDF-Export: Zeichen, die die Schrift IBM Plex (nur Latin-1) nicht enthält, etwa „→“, „≥“, „Š“ oder „Ł“, erschienen als Kästchen. Sie stehen jetzt in DejaVu Sans, die auf dem VPS installiert ist. Aufgefallen im Probe-Export echter Antworten („Opportunity → Enrollment“). Test in `tests/test_export.py`, er läuft nur, wo DejaVu vorhanden ist.
+
 ## 0.7.0 (10.11.2026)
 
 - Export: Die Knöpfe „PDF report“ und „Excel“ funktionieren. Bisher fehlte die Gegenstelle auf dem Server, jeder Klick endete mit „Export failed“. Übernommen aus V2 und auf das Antwortformat von V3 umgestellt (`web/antwort.py`, `web/bericht.py`, `web/excel.py`, Routen `/api/export.pdf` und `/api/export.xlsx`).

@@ -103,6 +103,14 @@ class Export(Grundlage):
         self.assertEqual(self.c.get(f"/api/export.pdf?gespraeche={k}").status_code, 200)
 
 
+class Schrift(unittest.TestCase):
+    @unittest.skipUnless(bericht.ERSATZ.exists(), "Ersatzschrift DejaVu fehlt (nur auf dem VPS vorhanden)")
+    def test_fehlende_zeichen_in_ersatzschrift(self):
+        self.assertEqual(bericht._schrift("Opportunity → <b>Enrollment</b> ≥ 5 % Šimić"),
+                         'Opportunity <font name="Ersatz">→</font> <b>Enrollment</b> <font name="Ersatz">≥</font> 5 % '
+                         '<font name="Ersatz">Š</font>imi<font name="Ersatz">ć</font>')
+
+
 class Zerlegung(unittest.TestCase):
     def test_kernaussage_tabelle_und_eigenes_bild(self):
         k = "a" * 32
