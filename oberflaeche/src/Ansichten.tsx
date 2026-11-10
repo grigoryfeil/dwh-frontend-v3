@@ -2,9 +2,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent, type ReactNode, type Ref } from "react";
 import logo from "./assets/sae-solo-grey.svg";
 import { dashboardTitel, type Datei, type Runde, type Stufe } from "./api";
-import { inline, sprache, zerlege, type Beleg, type Lesart } from "./antwort";
+import { inline, sprache, zerlege } from "./antwort";
 import { BEISPIELE } from "./beispiele";
-import { DiagrammAnsicht } from "./Diagramm";
 import { dauer, laufzeit, nr, uhrzeit } from "./format";
 
 export type Zug = {
@@ -24,10 +23,8 @@ const STUFEN: Record<string, string> = {
   verstehen: "Understanding question",
   abfragen: "Querying data",
   analysieren: "Analysing",
-  diagramm: "Building chart",
   schreiben: "Writing answer",
   pruefen: "Verifying",
-  korrigieren: "Refining answer",
 };
 const STATUS: Record<Stufe["status"], string> = { erledigt: "Done", aktiv: "In progress", offen: "", uebersprungen: "Not needed" };
 const HTML = /\.(x?html?|shtml|mht)$/i;
@@ -287,7 +284,7 @@ export function ArbeitAbschnitt(props: { zug: Zug; sekunden: number; onAbbrechen
   const stufen: Stufe[] =
     zug.runde?.stufen ??
     Object.keys(STUFEN)
-      .filter((s) => zug.verify || (s !== "pruefen" && s !== "korrigieren"))
+      .filter((s) => zug.verify || s !== "pruefen")
       .map((stufe, i) => ({ stufe, status: i === 0 ? "aktiv" : "offen" }));
   const schritte = zug.runde?.schritte ?? [];
   return (
@@ -390,7 +387,6 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
         <div className="spalte schmal">
           <p className="titel" dangerouslySetInnerHTML={html(a.titel)} />
           <div className="fliesstext" dangerouslySetInnerHTML={html(a.rest)} />
-          {a.art === "keine" && <Lesarten lesarten={a.lesarten} arbeitet={props.arbeitet} onOption={props.onOption} />}
           {a.art === "rueckfrage" && a.optionen.length > 0 && (
             <div className="optionen">
               {a.optionen.map((o) => (
@@ -444,7 +440,6 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
       </div>
       <div className="spalte antwort">
         {a.lead && <p className="lead" dangerouslySetInnerHTML={html(a.lead)} />}
-        <Lesarten lesarten={a.lesarten} arbeitet={props.arbeitet} onOption={props.onOption} />
         {a.kennzahlen.length > 0 && (
           <div className="kennzahlen" data-n={a.kennzahlen.length}>
             {a.kennzahlen.map((k, i) => (
@@ -458,7 +453,6 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
             ))}
           </div>
         )}
-        {a.diagramme.map((d, i) => <DiagrammAnsicht key={i} spec={d} lang={lang} />)}
         {a.rest && <div className="md" onClick={dashboardLink} dangerouslySetInnerHTML={html(a.rest)} />}
         {a.unvollstaendig && <div className="meta">Part of this answer could not be displayed.</div>}
         {hinweis && (
@@ -487,7 +481,6 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
             <div className="nachweis-text" dangerouslySetInnerHTML={html(a.nachweis.html)} />
           </div>
         )}
-        <Quellenbeleg belege={a.quellen.length ? a.quellen : ausAnnahmen(a.annahmen)} />
         {andere.length > 0 && (
           <div className="dateien">
             <b>Files</b>
@@ -501,71 +494,6 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
       </div>
     </section>
   );
-}
-
-const STUFE: Record<string, string> = { freigegeben: "approved", vorschlag: "provisional", "ohne Katalog": "not in catalogue" };
-
-// Knöpfe für andere Lesarten, höchstens zwei (6.7, Runde 6), bei einer Nichtantwort die verwandte Auswertung
-function Lesarten(props: { lesarten: Lesart[]; arbeitet: boolean; onOption: (t: string) => void }) {
-  if (!props.lesarten.length) return null;
-  return (
-    <div className="lesart">
-      {props.lesarten.map((l) => (
-        <button key={l.label} className="umriss" disabled={props.arbeitet} onClick={() => props.onOption(l.prompt)}>
-          {l.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-// Eingeklappter Quellenbeleg aus den Host-Zeilen der Antwort: Definitionen mit Stufe, Quellen, Filter, Annahmen.
-// SQL zeigt die Seite nie (Entscheidung Grigory, 08.11.2026).
-function Quellenbeleg({ belege }: { belege: Beleg[] }) {
-  if (!belege.length) return null;
-  const vorlaeufig = belege.some((b) => b.metricDefinitions.some((d) => d.stage !== "freigegeben"));
-  const liste = (titel: string, eintraege: string[]) =>
-    eintraege.length > 0 && (
-      <div className="beleg-teil">
-        <b>{titel}</b>
-        <ul>{eintraege.map((e) => <li key={e}>{e}</li>)}</ul>
-      </div>
-    );
-  return (
-    <details className="quellenbeleg">
-      <summary>
-        Sources{belege.length > 1 ? ` · ${belege.length}` : ""}
-        {vorlaeufig && <span> · definitions provisional</span>}
-      </summary>
-      {belege.map((b, i) => (
-        <div key={i} className="beleg">
-          {b.title && <p className="beleg-titel">{b.title}</p>}
-          {b.metricDefinitions.length > 0 && (
-            <div className="beleg-teil">
-              <b>Definitions</b>
-              <ul>
-                {b.metricDefinitions.map((d, k) => (
-                  <li key={k}>
-                    {d.label && <strong>{d.label}: </strong>}
-                    {d.definition}
-                    {d.stage && <span className={`stufe-marke ${d.stage === "freigegeben" ? "" : "offen"}`}>{STUFE[d.stage] ?? d.stage}</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {liste("Assumptions and caveats", [...b.assumptions, ...b.caveats])}
-          {liste("Filters and period", [...b.filters, ...(b.reportingPeriod ? [b.reportingPeriod] : [])])}
-          {liste("Data sources", b.tables)}
-        </div>
-      ))}
-    </details>
-  );
-}
-
-// Annahmen-Zeile der Antwort (0.5.2) als Beleg, wenn das Modell keinen eigenen liefert
-function ausAnnahmen(annahmen: string[]): Beleg[] {
-  return annahmen.length ? [{ title: "", metricDefinitions: [], tables: [], filters: [], assumptions: annahmen, caveats: [] }] : [];
 }
 
 function titelAusName(name: string) {

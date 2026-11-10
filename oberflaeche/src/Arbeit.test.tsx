@@ -69,3 +69,35 @@ describe("Rollliste der Schritte", () => {
     expect(gerollt).toHaveLength(1);
   });
 });
+
+// Bevor der Server den ersten Stand meldet, zeigt die Seite dieselben Stufen, die er danach meldet (web/fortschritt.py)
+describe("Stufen vor dem ersten Stand", () => {
+  let ort: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    Element.prototype.scrollTo = (() => {}) as typeof Element.prototype.scrollTo;
+    ort = document.body.appendChild(document.createElement("div"));
+    root = createRoot(ort);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    ort.remove();
+    vi.unstubAllGlobals();
+  });
+
+  const stufen = (verify: boolean) => {
+    const neu = { id: 1, frage: "Wie viele?", zeit: new Date(), verify } as Zug;
+    act(() => root.render(<ArbeitAbschnitt zug={neu} sekunden={0} onAbbrechen={() => {}} />));
+    return [...ort.querySelectorAll(".stufe .label")].map((e) => e.textContent);
+  };
+
+  it("vier Stufen ohne Verify, fünf mit", () => {
+    expect(stufen(false)).toEqual(["Understanding question", "Querying data", "Analysing", "Writing answer"]);
+    expect(stufen(true)).toEqual(["Understanding question", "Querying data", "Analysing", "Writing answer", "Verifying"]);
+  });
+});
+

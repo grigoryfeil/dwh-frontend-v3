@@ -13,7 +13,6 @@ const TAKT = 2000; // Abfrage des Stands, wie bisher
 const TAKT_OHNE_NETZ = 5000;
 const warte = (ms: number) => new Promise((weiter) => setTimeout(weiter, ms));
 const TABELLE = /\n\s*\|?\s*:?-{3,}:?\s*\|/;
-const DIAGRAMM = /genui\s*\{\s*"charts_widget_v2"/; // Excel trägt auch die Werte der Diagramme
 
 export default function App() {
   const [phase, setPhase] = useState<"laden" | "login" | "app">("laden");
@@ -39,7 +38,7 @@ export default function App() {
   const toastZeit = useRef<number>(undefined);
 
   const laufend = zuege.find((z) => !z.fertig && !z.fehler);
-  const blaetter = zuege.filter((z) => z.fertig && !z.fehler && (TABELLE.test(z.runde?.antwort ?? "") || DIAGRAMM.test(z.runde?.antwort ?? ""))).length;
+  const blaetter = zuege.filter((z) => z.fertig && !z.fehler && TABELLE.test(z.runde?.antwort ?? "")).length;
   // Kriterium 5: fester Hinweis, bis der Katalog freigegeben ist
   const meta = [datum(info.datenstand) && `Data as of ${datum(info.datenstand)}`, info.definitionen_vorlaeufig && "Definitions provisional",
     info.version && `V3 ${info.version}`].filter(Boolean).join(" · ");

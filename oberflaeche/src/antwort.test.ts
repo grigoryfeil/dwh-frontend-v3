@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hostTeile, inline, linkErlaubt, quellen, sprache, zerlege } from "./antwort";
+import { inline, linkErlaubt, ohneHostZeilen, sprache, zerlege } from "./antwort";
 
 const G = "abc123";
 const DATEI = `/api/gespraeche/${G}/dateien/`;
@@ -35,14 +35,12 @@ describe("Antwort zerlegen", () => {
 
   it("Nichtantwort mit Titel", () => {
     const a = zerlege("[Keine Antwort]\nDie Daten können das nicht beantworten.\n\nDas DWH enthält keine Arbeitgeber.", G);
-    expect(a).toEqual({ art: "keine", titel: "Die Daten können das nicht beantworten.", rest: "<p>Das DWH enthält keine Arbeitgeber.</p>\n", lesarten: [] });
+    expect(a).toEqual({ art: "keine", titel: "Die Daten können das nicht beantworten.", rest: "<p>Das DWH enthält keine Arbeitgeber.</p>\n" });
   });
 
-  it("Nichtantwort mit Knopf für eine verwandte Auswertung (6.7)", () => {
+  it("Host-Zeile in einer Nichtantwort verschwindet aus dem Text", () => {
     const a = zerlege('[Keine Antwort]\nGründe fehlen.\n\nNur der Zeitpunkt.\n\ngenui{"alternative_reading":{"label":"Abbruchquote","prompt":"Wie hoch ist die Abbruchquote?"}}', G);
-    if (a.art !== "keine") throw new Error();
-    expect(a.lesarten).toEqual([{ label: "Abbruchquote", prompt: "Wie hoch ist die Abbruchquote?" }]);
-    expect(a.rest).not.toContain("genui");
+    expect(a).toEqual({ art: "keine", titel: "Gründe fehlen.", rest: "<p>Nur der Zeitpunkt.</p>\n" });
   });
 
   it("Rückfrage mit Optionen", () => {
@@ -108,63 +106,39 @@ describe("Sprache", () => {
   });
 });
 
-// Dieselben Fälle wie in tests/test_antwort.py, damit Seite und PDF dieselben Host-Zeilen lesen
+// Zeilen, wie das Daten-Plugin sie für einen Host schreibt, der sie darstellt. Diese Seite stellt sie nicht dar.
 const DIAGRAMM =
   'genui{"charts_widget_v2":{"content":{"chartType":"bar","meta":{"title":"Neu nach Standort"},"xKey":"s","series":[{"dataKey":"n","label":"Neu"}],"data":[{"s":"HH","n":120},{"s":"B","n":95}]}}}';
-const QUELLEN =
-  'genui{"sources":{"content":{"schemaVersion":1,"items":[{"id":"neu","title":"Neueinschreibungen","metricDefinitions":[{"label":"Neueinschreibung","definition":"Vertrag ohne Storno.","stage":"vorschlag"}],"tables":["vertraege"],"filters":["Intake: 0926"]}]}}}';
-const LESART = 'genui{"alternative_reading":{"label":"Nach Studienjahr","prompt":"Wie viele im Studienjahr 2025/26?"}}';
+const QUELLEN = 'genui{"sources":{"content":{"schemaVersion":1,"items":[{"id":"neu","title":"Neueinschreibungen","tables":["vertraege"]}]}}}';
 
-describe("Host-Verträge", () => {
-  it("Host-Zeilen verschwinden aus dem Text und kommen als Teile", () => {
-    const { text, teile } = hostTeile(`HH liegt vorn.\n\n${DIAGRAMM}\n\nB folgt.\n${LESART}\n\n${QUELLEN}\n`);
+describe("Schutzfilter für Host-Zeilen", () => {
+  it("Host-Zeilen verschwinden aus dem Text", () => {
+    const { text, entfernt } = ohneHostZeilen(`HH liegt vorn.\n\n${DIAGRAMM}\n\nB folgt.\n\n${QUELLEN}\n`);
     expect(text.split(/\s+/).filter(Boolean)).toEqual(["HH", "liegt", "vorn.", "B", "folgt."]);
-    expect(teile.map((t) => t.name)).toEqual(["charts_widget_v2", "alternative_reading", "sources"]);
+    expect(entfernt).toBe(true);
   });
 
   it("über mehrere Zeilen, im Codeblock, kaputt oder als visualize", () => {
-    const { text, teile } = hostTeile(
+    const { text, entfernt } = ohneHostZeilen(
       'Ergebnis.\n\n```\ngenui{"charts_widget_v2": {"content": {\n  "chartType": "line", "data": [{"x": "a}"}]}}}\n```\n\ngenui{"sources": {kaputt\nvisualize{"path":"/x.html"}\nSchluss.',
     );
     expect(text.split(/\s+/).filter(Boolean)).toEqual(["Ergebnis.", "Schluss."]);
-    expect(teile).toEqual([
-      { name: "charts_widget_v2", inhalt: { chartType: "line", data: [{ x: "a}" }] } },
-      { name: "ungueltig", inhalt: null },
-      { name: "ungueltig", inhalt: null },
-    ]);
-    expect(zerlege('Ergebnis.\ngenui{"app_block":{"content":"<p>x</p>"}}', G)).toMatchObject({ unvollstaendig: true });
+    expect(entfernt).toBe(true);
   });
 
-  it("Antwort mit Diagramm, Quellenbeleg und anderer Lesart", () => {
-    const a = zerlege(`Im Kalenderjahr 2026 kamen 215 neu.\n\n- **215** Neueinschreibungen\n\n${DIAGRAMM}\n${LESART}\n${QUELLEN}`, G);
+  it("Text ohne Host-Zeile bleibt, wie er ist, auch wenn das Wort genui darin steht", () => {
+    const roh = "Das Wort genui{ steht hier mitten im Satz.\n\n| A | B |\n|---|---|\n| x | 1 |\n";
+    expect(ohneHostZeilen(roh)).toEqual({ text: roh, entfernt: false });
+  });
+
+  it("die Antwort sagt, dass ein Teil fehlt, und zeigt kein JSON", () => {
+    const a = zerlege(`Im Kalenderjahr 2026 kamen 215 neu.\n\n- **215** Neueinschreibungen\n\n${DIAGRAMM}\n${QUELLEN}`, G);
     if (a.art !== "antwort") throw new Error(a.art);
     expect(a.lead).toBe("Im Kalenderjahr 2026 kamen 215 neu.");
+    expect(a.kennzahlen).toHaveLength(1);
     expect(a.rest).toBe("");
-    expect(a.diagramme[0].chartType).toBe("bar");
-    expect(a.quellen[0]).toMatchObject({ title: "Neueinschreibungen", tables: ["vertraege"], filters: ["Intake: 0926"] });
-    expect(a.quellen[0].metricDefinitions[0].stage).toBe("vorschlag");
-    expect(a.lesarten).toEqual([{ label: "Nach Studienjahr", prompt: "Wie viele im Studienjahr 2025/26?" }]);
-  });
-
-  it("höchstens zwei andere Lesarten, gleiche Beschriftung nur einmal (6.7, Runde 6)", () => {
-    const zweite = 'genui{"alternative_reading":{"label":"Nur Kernprodukte","prompt":"Wie viele Kernprodukte 2026?"}}';
-    const dritte = 'genui{"alternative_reading":{"label":"Nach Geschäftsjahr","prompt":"Wie viele im Geschäftsjahr?"}}';
-    const a = zerlege(`Im Kalenderjahr 2026 kamen 215 neu.\n\n${LESART}\n${LESART}\n${zweite}\n${dritte}`, G);
-    if (a.art !== "antwort") throw new Error(a.art);
-    expect(a.lesarten.map((l) => l.label)).toEqual(["Nach Studienjahr", "Nur Kernprodukte"]);
-  });
-
-  it("Annahmen-Zeile der Antwort (0.5.2) wird gelesen und nicht als fehlender Teil gemeldet", () => {
-    const a = zerlege('Im Septemberintake 2026 kamen 215 neu.\n\ngenui{"assumptions":["Septemberintake 2026","nur Kernprodukte"]}', G);
-    if (a.art !== "antwort") throw new Error(a.art);
-    expect(a.annahmen).toEqual(["Septemberintake 2026", "nur Kernprodukte"]);
-    expect(a.unvollstaendig).toBe(false);
-    expect(a.rest).toBe("");
-  });
-
-  it("verschachtelte Quellen des Plugins", () => {
-    const b = quellen([{ name: "sources", inhalt: { items: [{ title: "A", assumptions: ["Annahme."], queries: [{ reportingPeriod: "2026", source: { label: "V", tables: ["t1"], caveats: ["E."], metricDefinitions: [{ label: "X", definition: "Y.", stage: "freigegeben" }] } }] }] } }]);
-    expect(b).toEqual([{ title: "A", metricDefinitions: [{ label: "X", definition: "Y.", stage: "freigegeben" }], tables: ["t1"], filters: [], reportingPeriod: "2026", assumptions: ["Annahme."], caveats: ["E."] }]);
+    expect(a.unvollstaendig).toBe(true);
+    expect(zerlege("Im Kalenderjahr 2026 kamen 215 neu.", G)).toMatchObject({ unvollstaendig: false });
   });
 
   it("Kurzklärung mit Fragen und Vorschlägen", () => {

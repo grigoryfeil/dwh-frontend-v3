@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.5 (10.11.2026)
+
+- Oberfläche, Darstellungen aus V2 entfernt, die V3 nicht verwendet: eigene Diagramme (`Diagramm.tsx`), eingeklappter Quellenbeleg, Knöpfe für andere Lesarten, samt CSS und Tests. Grundlage ist eine Zählung in der Beta-Ablage (nur gelesen, 11 Antworten aus 0.2.0 bis 0.7.0): keine einzige Antwort enthält eine solche Zeile (`genui`, `visualize`), Diagramme und Dashboards kamen immer als Datei, auch in den fünf Runden, die die Plugin-Anleitung zu solchen Zeilen gelesen haben.
+- Schutzfilter bleibt: Schreibt das Modell doch eine solche Zeile, fällt sie samt ihrem JSON aus dem Text, und unter der Antwort steht „Part of this answer could not be displayed.“ Rohes JSON sieht kein Nutzer.
+- Arbeitsanzeige: Bevor der Server den ersten Stand meldete, zeigte die Liste fünf Stufen mit „Building chart“, danach vier. V3 kennt diese Stufe und „Refining answer“ nicht, die Liste zeigt von Anfang an die vier Stufen des Servers (fünf mit Verify).
+- Excel-Zähler im Exportmenü zählt nur noch Antworten mit Tabelle, nicht mehr Diagrammzeilen aus V2.
+- Am Aussehen ändert sich sonst nichts (Bildvergleich gegen 0.7.4, Abweichung nur in der Uhrzeit). Das Skript der Seite ist rund 12 kB kleiner.
+- Geblieben sind die Marken `[Keine Antwort]` und `[Kurzklärung]`, die auch der Export kennt. In der Ablage kam bisher nur `[Rückfrage]` vor.
+- Tests: `antwort.test.ts` auf den Schutzfilter umgestellt (4 statt 6 Fälle zu Host-Zeilen, 1 zur Nichtantwort), `Arbeit.test.tsx` 1 neuer (Stufen). Oberfläche zusammen 37.
+
 ## 0.7.4 (10.11.2026)
 
 - Oberfläche, Reste aus V2 entfernt, die V3 nachweislich nie erreicht. Am Aussehen ändert sich nichts (Bildvergleich gegen 0.7.3):

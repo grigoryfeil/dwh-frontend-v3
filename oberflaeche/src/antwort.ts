@@ -1,5 +1,5 @@
-// Antworttext des Modells (Markdown) in die Teile des Entwurfs zerlegen: Lead, Kennzahlen, übriger Text,
-// Nichtantwort und Rückfrage. Die Form verlangt die Anweisung in dwh_v2/web.py, fehlt sie, bleibt es Markdown.
+// Antworttext des Modells (Markdown) in die Teile des Entwurfs zerlegen: Lead, Kennzahlen, übriger Text, Nachweis,
+// Nichtantwort und Rückfrage. Die Form verlangt harness/anweisung.md, fehlt sie, bleibt es Markdown.
 //
 // Sicherheit (Befund 4.4): kein rohes HTML, Linkziele nur https:, mailto:, # und Dateien des eigenen Gesprächs,
 // Bilder nur aus dem eigenen Gespräch. Alles andere wird Text.
@@ -7,43 +7,16 @@ import markdownit from "markdown-it";
 import type { Token } from "markdown-it";
 
 export type Kennzahl = { wert: string; einheit: string; label: string };
-// Host-Verträge aus dwh_v2/anweisungen/analyst.md, wie host_teile in dwh_v2/antwort.py
-export type Reihe = { dataKey: string; label?: string; valuePrefix?: string; valueSuffix?: string };
-export type Diagramm = {
-  chartType: string;
-  meta?: { title?: string; description?: string; footer?: string };
-  xKey?: string;
-  xAxisLabel?: string;
-  nameKey?: string;
-  valueKey?: string;
-  layout?: string;
-  series?: Reihe[];
-  data?: Record<string, unknown>[];
-};
-export type Definition = { label?: string; definition?: string; stage?: string };
-export type Beleg = {
-  title: string;
-  metricDefinitions: Definition[];
-  tables: string[];
-  filters: string[];
-  reportingPeriod?: string;
-  assumptions: string[];
-  caveats: string[];
-};
-export type Lesart = { label: string; prompt: string };
 export type Nachweis = { titel: string; html: string };
 export type Antwort =
   | { art: "antwort"; lead: string; kennzahlen: Kennzahl[]; rest: string; tabellen: number; bilder: string[];
-      diagramme: Diagramm[]; quellen: Beleg[]; annahmen: string[]; lesarten: Lesart[]; unvollstaendig: boolean;
-      nachweis: Nachweis | null }
-  | { art: "keine"; titel: string; rest: string; lesarten: Lesart[] }
+      unvollstaendig: boolean; nachweis: Nachweis | null }
+  | { art: "keine"; titel: string; rest: string }
   | { art: "rueckfrage"; titel: string; rest: string; optionen: string[] }
   | { art: "kurzklaerung"; titel: string; rest: string; optionen: string[] };
 
 const MARKE = /^\s*\[(keine antwort|no answer|rückfrage|rueckfrage|clarification|kurzklärung|kurzklaerung|before building)\]\s*(.*)$/i;
 const HOST_ZEILE = /^[ \t>`]*(genui|visualize)\s*(?=\{)/gm;
-const BEKANNT = ["charts_widget_v2", "sources", "alternative_reading", "assumptions"];
-const objekt = (w: unknown): w is Record<string, unknown> => !!w && typeof w === "object" && !Array.isArray(w);
 const LEERER_CODEBLOCK = /^[ \t]*```[\w-]*[ \t]*\n(?:[ \t]*\n)*[ \t]*```[ \t]*$/gm;
 
 function jsonEnde(text: string, start: number): number | null {
@@ -63,83 +36,37 @@ function jsonEnde(text: string, start: number): number | null {
   return null;
 }
 
-export type HostTeil = { name: string; inhalt: unknown };
-
-// Text ohne Host-Zeilen und die Teile darin. Kaputtes JSON fällt aus dem Text, ab der Startzeile bis zu ihrem Ende, und
-// kommt wie visualize und unbekannte Namen als Teil "ungueltig", damit die Seite sagt, dass etwas fehlt.
-export function hostTeile(text: string): { text: string; teile: HostTeil[] } {
-  const teile: HostTeil[] = [];
+// Schutzfilter: V3 liefert Diagramme und Quellen als Datei oder im Text, das Daten-Plugin kennt aber auch Zeilen für
+// den Host (`genui{…}`, `visualize{…}`), die diese Seite nicht darstellt. Solche Zeilen fallen samt ihrem JSON aus dem
+// Text, auch über mehrere Zeilen, im Codeblock oder kaputt, und die Seite sagt, dass etwas fehlt (`entfernt`).
+export function ohneHostZeilen(text: string): { text: string; entfernt: boolean } {
   const aus: string[] = [];
   let pos = 0;
+  let entfernt = false;
   HOST_ZEILE.lastIndex = 0;
   for (let t = HOST_ZEILE.exec(text); t; t = HOST_ZEILE.exec(text)) {
+    entfernt = true;
     aus.push(text.slice(pos, t.index));
     const klammer = t.index + t[0].length;
     let ende = jsonEnde(text, klammer);
-    let wert: unknown = null;
     try {
-      wert = ende ? JSON.parse(text.slice(klammer, ende)) : null;
+      if (ende) JSON.parse(text.slice(klammer, ende));
     } catch {
-      wert = null;
+      ende = null;
     }
-    if (wert === null || ende === null) {
+    if (ende === null) {
       const nl = text.indexOf("\n", klammer);
       ende = nl < 0 ? text.length : nl;
     }
-    if (t[1] === "genui" && objekt(wert) && Object.keys(wert).length === 1) {
-      const [name, roh] = Object.entries(wert)[0];
-      const inhalt = objekt(roh) && "content" in roh ? roh.content : roh;
-      teile.push({ name: BEKANNT.includes(name) ? name : "ungueltig", inhalt });
-    } else teile.push({ name: "ungueltig", inhalt: null });
     const zeilenende = text.indexOf("\n", ende);
     const rest = text.slice(ende, zeilenende < 0 ? text.length : zeilenende);
     pos = rest.replace(/[ \t`]/g, "") ? ende : zeilenende < 0 ? text.length : zeilenende;
     HOST_ZEILE.lastIndex = pos;
   }
   aus.push(text.slice(pos));
-  return { text: aus.join("").replace(LEERER_CODEBLOCK, ""), teile };
+  return { text: aus.join("").replace(LEERER_CODEBLOCK, ""), entfernt };
 }
 
-const texte = (w: unknown): string[] =>
-  Array.isArray(w) ? w.filter((x) => ["string", "number"].includes(typeof x)).map(String) : [];
-
-// Quellenbelege flach je Befund, die verschachtelte Form des Plugins (queries[].source) zusammengeführt
-export function quellen(teile: HostTeil[]): Beleg[] {
-  const out: Beleg[] = [];
-  for (const teil of teile) {
-    if (teil.name !== "sources" || !objekt(teil.inhalt) || !Array.isArray(teil.inhalt.items)) continue;
-    for (const item of teil.inhalt.items) {
-      if (!objekt(item)) continue;
-      const schichten: Record<string, unknown>[] = [item];
-      for (const q of Array.isArray(item.queries) ? item.queries : []) {
-        if (objekt(q)) schichten.push(q);
-        if (objekt(q) && objekt(q.source)) schichten.push(q.source);
-      }
-      const alle = (feld: string) => [...new Set(schichten.flatMap((s) => texte(s[feld])))];
-      const definitionen: Definition[] = [];
-      for (const s of schichten) {
-        for (const d of Array.isArray(s.metricDefinitions) ? s.metricDefinitions : []) {
-          if (!objekt(d)) continue;
-          // Nur Texte: Ein Objekt an dieser Stelle ließe React die ganze Antwort verwerfen
-          const def: Definition = {};
-          for (const feld of ["label", "definition", "stage"] as const) if (["string", "number"].includes(typeof d[feld])) def[feld] = String(d[feld]);
-          if (!definitionen.some((x) => JSON.stringify(x) === JSON.stringify(def))) definitionen.push(def);
-        }
-      }
-      const zeitraum = schichten.find((s) => s.reportingPeriod)?.reportingPeriod;
-      out.push({
-        title: String(item.title ?? ""),
-        metricDefinitions: definitionen,
-        tables: alle("tables"),
-        filters: alle("filters"),
-        ...(zeitraum ? { reportingPeriod: String(zeitraum) } : {}),
-        assumptions: alle("assumptions"),
-        caveats: alle("caveats"),
-      });
-    }
-  }
-  return out;
-}
 const ZAHL = /^\s*(\d|[+\-−–]\s?\d)/;
 const ZELLE_ZAHL = /^[+\-−–]?\s?[\d.,'\s]*\d[\d.,'\s]*\s?(%|‰|pp|pp\.|pkt\.?|€|eur|mio\.?|tsd\.?|k)?$/i;
 
@@ -309,22 +236,10 @@ function nachweisAus(bl: Token[][], ab: number, md: ReturnType<typeof markdownit
   return null;
 }
 
-// Höchstens zwei Knöpfe für andere Lesarten (6.7, Runde 6), gleiche Beschriftung nur einmal
-function lesartenAus(teile: HostTeil[]): Lesart[] {
-  const lesarten = new Map<string, Lesart>();
-  for (const t of teile) {
-    const l = t.inhalt as Lesart;
-    if (t.name !== "alternative_reading" || !objekt(t.inhalt) || !l.label || !l.prompt) continue;
-    const label = String(l.label);
-    if (!lesarten.has(label)) lesarten.set(label, { label, prompt: String(l.prompt) });
-  }
-  return [...lesarten.values()].slice(0, 2);
-}
-
 export function zerlege(text: string, gespraech: string | null): Antwort {
   const bilder: string[] = [];
   const md = parser(gespraech, bilder);
-  const host = hostTeile(text.replace(/\r\n/g, "\n"));
+  const host = ohneHostZeilen(text.replace(/\r\n/g, "\n"));
   text = host.text;
   const zeilen = text.split("\n");
   const erste = zeilen.findIndex((z) => z.trim() !== "");
@@ -342,8 +257,7 @@ export function zerlege(text: string, gespraech: string | null): Antwort {
     const env = {};
     const tokens = md.parse(rest.join("\n"), env);
     if (/^(keine antwort|no answer)$/i.test(marke[1])) {
-      // seit 6.7 mit Knopf für eine eng verwandte Auswertung, die die Daten tragen
-      return { art: "keine", titel, rest: md.renderer.render(tokens, md.options, env), lesarten: lesartenAus(host.teile) };
+      return { art: "keine", titel, rest: md.renderer.render(tokens, md.options, env) };
     }
     const bl = bloecke(tokens);
     const letzte = bl.length - 1;
@@ -367,12 +281,7 @@ export function zerlege(text: string, gespraech: string | null): Antwort {
   const beleg = nachweisAus(bl, ab, md, env);
   const rest = md.renderer.render(bl.slice(ab, beleg?.ab).flat(), md.options, env);
   const tabellen = tokens.filter((t) => t.type === "table_open").length;
-  const diagramme = host.teile.filter((t) => t.name === "charts_widget_v2" && objekt(t.inhalt)).map((t) => t.inhalt as Diagramm);
-  const lesarten = lesartenAus(host.teile);
-  // Annahmen der Abfrage, seit 0.5.2 eine eigene Zeile des Modells, die die Seite an den Beleg der Anwendung hängt
-  const annahmen = [...new Set(host.teile.filter((t) => t.name === "assumptions").flatMap((t) => texte(t.inhalt)))];
-  return { art: "antwort", lead, kennzahlen: kz ?? [], rest, tabellen, bilder, diagramme, quellen: quellen(host.teile), annahmen, lesarten,
-    unvollstaendig: host.teile.some((t) => t.name === "ungueltig"), nachweis: beleg?.nachweis ?? null };
+  return { art: "antwort", lead, kennzahlen: kz ?? [], rest, tabellen, bilder, unvollstaendig: host.entfernt, nachweis: beleg?.nachweis ?? null };
 }
 
 // Prüfhinweis: ein bis zwei Sätze, Links wie in der Antwort
