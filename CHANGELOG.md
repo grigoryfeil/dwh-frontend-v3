@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.7 (10.11.2026)
+
+Durchsicht des Codes vor dem Beta-Start, Korrekturen mit Regressionstests.
+
+- Runde: Scheitert die Nachverarbeitung einer Antwort, endet die Runde trotzdem. Vorher blieb das Gespräch für immer „läuft“ und belegte einen Platz, etwa wenn sich die Rundensicherung einer Datei bei voller Platte nicht anlegen ließ. Ohne Sicherung gilt wie vorgesehen der aktuelle Stand der Datei, jeder andere unerwartete Fehler zeigt sich als Fehler der Runde.
+- Abmelden und Session-Ende während einer Runde: Auch der Prozess der Prüfrunde endet sofort. Vorher rechnete er bis zu 25 Minuten ungezählt weiter. Ein Prozess, der beim Schließen gerade erst startet, wird beendet, und es bleibt kein Gesprächsverzeichnis zurück, das das Einspielen sperrt.
+- Oberfläche: Erreicht „Cancel“ den Server nicht (Netz, Drossel), wird der Knopf wieder frei. Vorher blieb er bis zum Ende der Runde gesperrt.
+- Betrieb: Selbsttest und Rauchtest (`web-probe.py`) melden sich am Ende ab. Vorher blieb ihr Gespräch bis zum Session-Ende offen, nach dem Rauchtest immer, nach dem Selbsttest bei Zeitüberschreitung, und `betrieb/wartung.sh` verweigerte so lange das Einspielen.
+- Regressionstests: 14 im Backend, 2 neue in der Oberfläche (die neuen scheitern am Stand davor).
+
 ## 0.6.6 (09.11.2026)
 
 - Katalog und Wissen: Antworten von C. Graf (BI-Team, 09.11.2026) auf die 13 Lücken des BI-Excels und die Änderungen des Objektindex 08c eingearbeitet (Commit 0d74651). Neun Kennzahlen bestätigt oder abgegrenzt, `cr_lead_enrollment` und `pipeline_value` neu definiert, `dauer_lead_enrollment` entfallen, `follow_up_quote` als offene Lücke. Studienverlauf (obt-Objekte) mit der Kollegin geklärt: Quelle bleibt `obt_outcomes`, Werte zum Baudatum. Offen bleiben Nichtabschlussquote, Prognoseformel, Definition Opportunity (Salesteam), P4 und die Nachlieferungen des DWH-Teams (Follow-up, Preise, Opportunities vor 0325).

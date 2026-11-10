@@ -95,8 +95,8 @@ def schreibe_sicher(basis, name, quelle):
     """Schreibt die offene Datei `quelle` nach basis/name, ohne einem Symlink zu folgen: Verzeichnisse Teil für Teil mit
     O_NOFOLLOW (fehlende werden angelegt), ein vorhandenes Ziel wird entfernt und exklusiv neu angelegt. True bei Erfolg.
     """
-    os.makedirs(basis, exist_ok=True)
     try:
+        os.makedirs(basis, exist_ok=True)
         fd = os.open(basis, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
     except OSError:
         return False

@@ -10,6 +10,9 @@ Abgesichert sind die Befunde aus dem Code-Review vom 08.11.2026:
 - Kopien für den Prüfer und zurück folgen keinem Symlink des Modells.
 - Der Verlaufsvorspann nach einer Pause ist begrenzt, ebenso die Zahl behaltener Gespräche.
 - Hängt eine Runde nach dem Abbruch, beendet die Notbremse nur den Prozess, das Gespräch bleibt nutzbar.
+Dazu die Befunde der Durchsicht vom 10.11.2026:
+- Scheitert die Nachverarbeitung einer Runde, endet sie trotzdem und gilt nicht für immer als laufend.
+- Abmelden während einer Runde beendet auch den Prüfer und einen Prozess, der gerade erst startet.
 Aufruf: python3 -m unittest tests/test_web_lebenszyklus.py (braucht starlette und httpx).
 """
 
@@ -19,6 +22,7 @@ import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HIER = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HIER))
@@ -279,6 +283,85 @@ class Notbremse(Grundlage):
         _, stand = self.frage("Zweite", k)
         self.assertEqual(stand["runden"][-1]["antwort"], "Antwort nach Notbremse")
         self.assertEqual(self.haupt["gestartet"], 2)
+
+
+class Nachverarbeitung(Grundlage):
+    def antwort(self, cwd, text, n):
+        (cwd / "dashboard.html").write_text("<html>Stand</html>")
+        return "[Dashboard](dashboard.html)"
+
+    def test_runde_endet_ohne_rundensicherung(self):
+        (self.basis / "runden").write_text("")  # Sicherungsort lässt sich nicht anlegen, wie bei voller Platte
+        _, stand = self.frage("Dashboard bitte")
+        self.assertEqual(stand["status"], "fertig")
+        url = stand["runden"][-1]["dateien"][0]["url"]
+        self.assertIn(b"Stand", self.c.get(url).content)  # ohne Sicherung gilt der aktuelle Stand
+
+    def test_unerwarteter_fehler_gibt_die_runde_frei(self):
+        with mock.patch.object(web_app.dateien, "uebersetze", side_effect=RuntimeError("kaputt")):
+            k, stand = self.frage("Dashboard bitte")
+        self.assertEqual(stand["status"], "fertig")
+        self.assertEqual(stand["runden"][-1]["fehler"], "interner Fehler")
+        _, stand = self.frage("Noch einmal", k)
+        self.assertEqual(len(stand["runden"][-1]["dateien"]), 1)
+        self.assertEqual(self.haupt["gestartet"], 2)
+
+
+class Startend(Ersatzmodell):
+    """Fährt noch hoch, während das Gespräch geschlossen wird, und legt dabei wie der echte Prozess `.tmp` an."""
+
+    def __init__(self, cwd, antworten, protokoll, startet, weiter):
+        super().__init__(cwd, antworten, protokoll)
+        self.startet, self.weiter = startet, weiter
+
+    def __enter__(self):
+        self.startet.set()
+        self.weiter.wait(5)
+        (self.cwd / ".tmp").mkdir(parents=True, exist_ok=True)
+        return super().__enter__()
+
+
+class Abmelden(Grundlage):
+    def neu(self, **fabriken):
+        e = web_app.Einstellungen(konten=self.basis / "konten.json", gespraeche=self.basis / "gespraeche",
+                                  hosts=["testserver"], sicher=False)
+        self.c = TestClient(web_app.erzeuge(e, **fabriken))
+        self.assertEqual(self.c.post("/api/anmelden", json={"email": "t@x", "passwort": "geheim"}).status_code, 200)
+
+    def stelle(self, verifizieren):
+        r = self.c.post("/api/fragen", json={"text": "Wie viele?", "gespraech": None, "verifizieren": verifizieren,
+                                             "speichern": False})
+        self.assertEqual(r.status_code, 202, r.text)
+        return r.json()["gespraech"]
+
+    def warte(self, bedingung):
+        for _ in range(100):
+            if bedingung():
+                return True
+            time.sleep(0.02)
+        return False
+
+    def test_abmelden_beendet_den_pruefer(self):
+        pruefer = []
+        self.neu(gespraech_fabrik=lambda cwd: Ersatzmodell(cwd, self.antwort, self.haupt),
+                 pruefer_fabrik=lambda cwd: pruefer.append(Haengendes(cwd, None, self.pruefer)) or pruefer[-1])
+        self.stelle(verifizieren=True)
+        self.assertTrue(self.warte(lambda: self.pruefer["eingaben"]))  # der Prüfer rechnet
+        self.assertEqual(self.c.post("/api/abmelden", json={}).status_code, 204)
+        self.assertTrue(pruefer[0].beendet.wait(1))
+
+    def test_abmelden_beim_start_hinterlaesst_nichts(self):
+        startet, weiter, modelle = threading.Event(), threading.Event(), []
+        self.neu(gespraech_fabrik=lambda cwd: modelle.append(Startend(cwd, self.antwort, self.haupt, startet, weiter))
+                 or modelle[-1])
+        k = self.stelle(verifizieren=False)
+        self.assertTrue(startet.wait(2))
+        self.assertEqual(self.c.post("/api/abmelden", json={}).status_code, 204)
+        weiter.set()
+        ort = self.basis / "gespraeche" / f"web-{k}"
+        self.assertTrue(self.warte(lambda: self.haupt["gestartet"] == 1), "Prozess nicht gestartet")
+        self.assertTrue(self.warte(lambda: not modelle[0].offen and not ort.exists()), "Prozess oder Verzeichnis bleibt")
+        self.assertEqual(self.haupt["eingaben"], [])
 
 
 if __name__ == "__main__":

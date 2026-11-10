@@ -72,7 +72,7 @@ class Einstellungen:
     max_gespraeche: int = 4  # gleichzeitig offene Modellprozesse
     max_behalten: int = 24  # behaltene Gespräche insgesamt (laufend und ruhend), darüber endet das älteste ruhende
     leerlauf: int = 1800  # Sekunden ohne Frage, danach ruht ein Gespräch (Prozess frei, Verlauf bleibt)
-    abbruch_frist: float = 30  # endet eine abgebrochene Runde so lange nicht, wird das Gespräch geschlossen
+    abbruch_frist: float = 30  # endet eine abgebrochene Runde so lange nicht, wird ihr Prozess beendet (Notbremse)
     session_leerlauf: int = 4 * 3600  # Beta: Pausen zwischen Fragen sind länger als eine Stunde
     session_absolut: int = 8 * 3600
     direkt: bool = True  # Codex als Kind dieses Prozesses (Unit als dwhv3), sonst über systemd-run (als root)
@@ -160,11 +160,12 @@ class Eintrag:
     def schliessen(self):
         self.beendet = True
         if self._zu.acquire(blocking=False):
-            if self.gespraech is not None:
-                try:
-                    self.gespraech.__exit__(None, None, None)
-                except Exception:  # noqa: BLE001, auch ein halb gestarteter Prozess wird geschlossen
-                    pass
+            for prozess in (self.pruefer, self.gespraech):  # auch eine laufende Prüfrunde endet mit dem Gespräch
+                if prozess is not None:
+                    try:
+                        prozess.__exit__(None, None, None)
+                    except Exception:  # noqa: BLE001, auch ein halb gestarteter Prozess wird geschlossen
+                        pass
             shutil.rmtree(self.cwd, ignore_errors=True)
             if self.runden_ort:
                 shutil.rmtree(self.runden_ort, ignore_errors=True)
@@ -388,7 +389,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 eintrag.pruefer = p
             try:
                 p.__enter__()
-                if eintrag.abbruch:
+                if eintrag.abbruch or eintrag.beendet:  # beendet: inzwischen geschlossen, ohne diesen Prüfer zu sehen
                     raise Sitzungsfehler("Runde abgebrochen")
                 r = p.frage(pruefung.pruefauftrag_text(verlauf, runde["frage"], text, kopiert),
                             beobachter=lambda n: beobachter.ereignis(n, p._turn_id))
@@ -456,6 +457,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 g = gespraech_fabrik(eintrag.cwd)
                 eintrag.gespraech = g
                 g.__enter__()
+            if eintrag.beendet:  # inzwischen geschlossen (Abmelden, Session-Ende), ohne diesen Prozess zu sehen
+                raise Sitzungsfehler("Gespräch beendet")
             if eintrag.abbruch:
                 raise Sitzungsfehler("Runde abgebrochen")
             g = eintrag.gespraech
@@ -500,6 +503,32 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             eintrag.laeuft, eintrag.fortschritt = False, None
             eintrag.zuletzt = time.monotonic()
         archiviere(eintrag, nummer, runde, "fertig", ergebnis.items, vorher, ergebnis)
+
+    def runde_im_hintergrund(eintrag, runde):
+        """Thread einer Runde. Scheitert `beantworte` unerwartet, etwa in der Nachverarbeitung, endet die Runde als
+        Fehler, statt für immer als laufend zu gelten und einen Platz zu belegen. Wurde das Gespräch während der
+        Runde geschlossen, bleibt nichts zurück, was die Runde danach noch gestartet oder angelegt hat."""
+        try:
+            beantworte(eintrag, runde)
+        except Exception as fehl:  # noqa: BLE001, jede Ausnahme beendet die Runde
+            print(f"runde: {type(fehl).__name__}: {str(fehl)[:300]}", file=sys.stderr, flush=True)
+            with sperre:
+                offen = eintrag.laeuft and eintrag.runden[-1] is runde  # sonst war die Runde schon freigegeben
+                if offen:
+                    runde["fehler"] = "interner Fehler"
+                    prozess = loese_prozess(eintrag)
+                    eintrag.laeuft, eintrag.fortschritt = False, None
+                    eintrag.zuletzt = time.monotonic()
+            if offen:
+                beende_prozess(prozess)
+        finally:
+            if eintrag.beendet:
+                with sperre:
+                    prozess = loese_prozess(eintrag)
+                beende_prozess(prozess)
+                shutil.rmtree(eintrag.cwd, ignore_errors=True)
+                if eintrag.runden_ort:
+                    shutil.rmtree(eintrag.runden_ort, ignore_errors=True)
 
     # Routen
 
@@ -614,7 +643,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         beende_prozess(frei or None)
         for g in zu_alt:
             g.schliessen()
-        threading.Thread(target=beantworte, args=(eintrag, runde), daemon=True).start()
+        threading.Thread(target=runde_im_hintergrund, args=(eintrag, runde), daemon=True).start()
         return JSONResponse({"gespraech": kennung}, status_code=202)
 
     def eigenes(request, s):

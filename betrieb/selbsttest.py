@@ -2,7 +2,7 @@
 
 Prüft die ganze Kette, an der ein Beta-Nutzer scheitern würde: nginx und Zertifikat, Anmeldung, Codex-Login beim
 Modellanbieter, Datenbank und Antwort. Meldet sich mit dem internen Testkonto aus /etc/dwh-frontend-v3/zugang an
-(nicht dem Beta-Konto), stellt eine kurze Frage ohne Ablage und löscht das Gespräch wieder.
+(nicht dem Beta-Konto), stellt eine kurze Frage ohne Ablage und meldet sich wieder ab, das beendet das Gespräch.
 Ergebnis: eine Zeile in /var/lib/dwh-frontend-v3/selbsttest.jsonl, Exitcode 1 bei Fehler (systemctl --failed).
 """
 import http.cookiejar, json, re, sys, time, urllib.error, urllib.request
@@ -55,7 +55,9 @@ def main():
             if not re.search(r"\d", r.get("antwort") or ""):
                 raise RuntimeError("Antwort ohne Zahl: " + (r.get("antwort") or "")[:200])
         finally:
-            req(f"/api/gespraeche/{kennung}", methode="DELETE")
+            # Abmelden beendet die Session samt Gespräch, auch wenn die Runde noch läuft (Löschen gäbe dann 409 und
+            # das Gespräch bliebe bis zum Session-Ende offen, so lange verweigert betrieb/wartung.sh das Einspielen)
+            req("/api/abmelden", {})
         eintrag.update(ok=True)
     except Exception as fehler:  # noqa: BLE001, jeder Fehler ist ein Befund
         eintrag.update(ok=False, fehler=str(fehler)[:300])

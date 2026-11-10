@@ -257,12 +257,15 @@ export default function App() {
 
   async function abbrechen() {
     if (!laufend || !gespraech.current) return;
-    aendere(laufend.id, { abbrechen: true });
+    const id = laufend.id;
+    aendere(id, { abbrechen: true });
     try {
       await api.abbrechen(gespraech.current);
     } catch (e) {
-      if (e instanceof Abgemeldet) abgemeldet();
-      // 409: Die Runde endete schon, die Verfolgung zeigt das Ergebnis
+      if (e instanceof Abgemeldet) return abgemeldet();
+      // 409: Die Runde endete schon, die Verfolgung zeigt das Ergebnis. Sonst kam der Abbruch nicht an (Netz, Drossel):
+      // Der Knopf wird wieder frei, statt bis zum Ende der Runde gesperrt zu bleiben
+      if (!(e instanceof Antwortfehler && e.status === 409)) aendere(id, { abbrechen: false });
     }
   }
 

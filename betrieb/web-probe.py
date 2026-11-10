@@ -1,7 +1,7 @@
 """Rauchtest der Weboberfläche über die öffentliche Adresse, als root auf dem VPS.
 
 Meldet sich mit dem Testkonto aus /etc/dwh-frontend-v3/zugang an (das Passwort wird nicht ausgegeben) und stellt die
-übergebenen Fragen nacheinander im selben Gespräch, also ab der zweiten als Nachfrage.
+übergebenen Fragen nacheinander im selben Gespräch, also ab der zweiten als Nachfrage. Meldet sich am Ende ab.
 Aufruf: python3 -I web-probe.py [--pruefen] "Frage" ["Nachfrage" ...]   (--pruefen: mit Prüfrunde)
 """
 import http.cookiejar, json, re, ssl, sys, time, urllib.request
@@ -35,3 +35,5 @@ for frage in [a for a in sys.argv[1:] if a != "--pruefen"]:
             with op.open(urllib.request.Request(B + d["url"]), timeout=30) as a:
                 print("  Datei", d["name"], a.status, a.headers["Content-Type"], len(a.read()), "Bytes")
         print("----", flush=True); break
+# Abmelden beendet das Gespräch: ein offenes hielte betrieb/wartung.sh bis zum Session-Ende vom Einspielen ab
+req("/api/abmelden", {})
