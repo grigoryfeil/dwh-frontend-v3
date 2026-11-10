@@ -2,7 +2,7 @@
 
 ## 0.6.8 (10.11.2026)
 
-- Beispielfragen (Menü „Examples“) gegen 0.6.6 geprüft und zwei ersetzt. Die Kurzantwort „Neueinschreibungen des laufenden Intakes gemessen am Ziel“ endete immer in einer Rückfrage (welcher Intake), ersetzt durch den Studierendenbestand im Vorjahresvergleich (48 s). Das Dashboard zum laufenden Intake brauchte 8,5 Minuten bei 10 Minuten Zeitlimit, ersetzt durch neue Leads je Monat mit Campusfilter (4,3 Minuten). Diagramm, Vergleich und Nachfrage beantworten ohne Rückfrage.
+- Beispielfragen (Menü „Examples“) gegen 0.6.6 geprüft und zwei ersetzt. Die Kurzantwort „Neueinschreibungen des laufenden Intakes gemessen am Ziel“ endete immer in einer Rückfrage (welcher Intake), ersetzt durch den Studierendenbestand im Vorjahresvergleich (48 s). Das Dashboard zum laufenden Intake brauchte 8,5 Minuten, zu lang für ein Beispiel, ersetzt durch neue Leads je Monat mit Campusfilter (4,3 Minuten). Diagramm, Vergleich und Nachfrage beantworten ohne Rückfrage.
 
 ## 0.6.7 (10.11.2026)
 
