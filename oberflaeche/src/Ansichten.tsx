@@ -4,6 +4,7 @@ import logo from "./assets/sae-solo-grey.svg";
 import { dashboardTitel, type Datei, type Runde, type Stufe } from "./api";
 import { inline, sprache, zerlege } from "./antwort";
 import { BEISPIELE } from "./beispiele";
+import { NEUIGKEITEN } from "./neuigkeiten";
 import { dauer, laufzeit, nr, uhrzeit } from "./format";
 
 export type Zug = {
@@ -619,6 +620,7 @@ export function BetaMenue(props: {
   const [mitsenden, setMitsenden] = useState(true);
   const [busy, setBusy] = useState(false);
   const [meldung, setMeldung] = useState("");
+  const [changelog, setChangelog] = useState(false);
 
   async function senden(e: FormEvent) {
     e.preventDefault();
@@ -632,50 +634,78 @@ export function BetaMenue(props: {
     <>
       <div className="auffang" onClick={props.onSchliessen} />
       <div className="exportmenue betamenue" role="dialog" aria-label="Beta features">
-        <div className="beta-kopf">
-          <b>Beta features</b>
-          <span>Help us improve Data Desk during development. These features will be removed before the rollout.</span>
-        </div>
-        {props.ablage ? (
+        {changelog ? (
           <>
-            <button className="pruefen beta-zeile" onClick={props.onSpeichern} aria-pressed={props.speichern}>
-              <Schalter an={props.speichern} gross />
-              <span className="pruefen-text">
-                <b>Save conversation</b>
-                <small>Questions, answers and files of this conversation are stored on the server for the development team.</small>
-              </span>
-            </button>
-            <form className="beta-feedback" onSubmit={senden}>
-              <label htmlFor="beta-text">
-                <b>Feedback</b>
-              </label>
-              <textarea
-                id="beta-text"
-                rows={4}
-                maxLength={4000}
-                placeholder="What worked, what did not?"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-              />
-              <label className="beta-haken">
-                <input
-                  type="checkbox"
-                  checked={mitsenden && props.gespraech}
-                  disabled={!props.gespraech}
-                  onChange={(e) => setMitsenden(e.target.checked)}
-                />
-                Include current conversation
-              </label>
-              {meldung && <span className="beta-meldung">{meldung}</span>}
-              <button className="knopf" type="submit" disabled={busy || !text.trim()}>
-                Send feedback
+            <div className="beta-kopf changelog-kopf">
+              <b>Changelog</b>
+              <button className="unterstrichen" onClick={() => setChangelog(false)}>
+                Back
               </button>
-            </form>
+            </div>
+            <ol className="changelog">
+              {NEUIGKEITEN.map((n) => (
+                <li key={n.version}>
+                  <span className="changelog-meta">
+                    {n.version} · {n.datum}
+                  </span>
+                  <b>{n.titel}</b>
+                  <p>{n.text}</p>
+                </li>
+              ))}
+            </ol>
           </>
         ) : (
-          <div className="beta-kopf">
-            <span>Saving and feedback are switched off on this server.</span>
-          </div>
+          <>
+            <div className="beta-kopf">
+              <b>Beta features</b>
+              <span>Help us improve Data Desk during development. These features will be removed before the rollout.</span>
+            </div>
+            {props.ablage ? (
+              <>
+                <button className="pruefen beta-zeile" onClick={props.onSpeichern} aria-pressed={props.speichern}>
+                  <Schalter an={props.speichern} gross />
+                  <span className="pruefen-text">
+                    <b>Save conversation</b>
+                    <small>Questions, answers and files of this conversation are stored on the server for the development team.</small>
+                  </span>
+                </button>
+                <form className="beta-feedback" onSubmit={senden}>
+                  <label htmlFor="beta-text">
+                    <b>Feedback</b>
+                  </label>
+                  <textarea
+                    id="beta-text"
+                    rows={4}
+                    maxLength={4000}
+                    placeholder="What worked, what did not?"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                  />
+                  <label className="beta-haken">
+                    <input
+                      type="checkbox"
+                      checked={mitsenden && props.gespraech}
+                      disabled={!props.gespraech}
+                      onChange={(e) => setMitsenden(e.target.checked)}
+                    />
+                    Include current conversation
+                  </label>
+                  {meldung && <span className="beta-meldung">{meldung}</span>}
+                  <button className="knopf" type="submit" disabled={busy || !text.trim()}>
+                    Send feedback
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="beta-kopf">
+                <span>Saving and feedback are switched off on this server.</span>
+              </div>
+            )}
+            <button className="beta-changelog" onClick={() => setChangelog(true)}>
+              <b>Changelog</b>
+              <span>What changed in each version of the beta.</span>
+            </button>
+          </>
         )}
       </div>
     </>

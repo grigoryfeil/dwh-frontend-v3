@@ -392,6 +392,14 @@ input[type="checkbox"] { accent-color: var(--ink); }
 .beta-feedback .knopf { align-self: flex-start; height: 40px; padding: 0 20px; flex-direction: row; align-items: center; }
 .beta-feedback .knopf:hover:not(:disabled) { background: var(--ink); }
 .beta-feedback .knopf:disabled { opacity: .4; cursor: default; }
+.exportmenue .beta-changelog { border-top: 1px solid var(--rule); padding: 16px 24px; }
+.changelog-kopf { flex-direction: row; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--rule); }
+.exportmenue .changelog-kopf .unterstrichen { padding: 0; }
+.changelog { list-style: none; margin: 0; padding: 0 24px; max-height: 360px; overflow-y: auto; scrollbar-width: thin; }
+.changelog li { display: flex; flex-direction: column; gap: 4px; padding: 16px 0 20px; }
+.changelog li + li { border-top: 1px solid var(--rule); }
+.changelog .changelog-meta { font-size: 12px; color: var(--text-3); }
+.changelog p { margin: 0; font-size: 13px; line-height: 20px; color: var(--text-body); }
 .beta-hinweis .kurz { display: none; }
 @media (max-width: 860px) { .beta-hinweis .lang { display: none; } .beta-hinweis .kurz { display: inline; } }
 .textknopf .kurz { display: none; }

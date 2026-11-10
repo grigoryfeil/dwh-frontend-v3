@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0 (10.11.2026)
+
+Beta-Release für die Tester (Freigabe Grigory, 10.11.2026). Enthält alles bis 0.7.5: Export als PDF und Excel, Arbeitsanzeige mit Lichtspur, UI-Review.
+
+- Oberfläche: Im Fenster „Beta features“ öffnet der Eintrag „Changelog“ die Änderungen für die Tester, englisch und getrennt von dieser Datei (`oberflaeche/src/neuigkeiten.ts`). Erster Eintrag: „0.8.0 · 10 November 2026 · Beta release for testing“. Neue Einträge oben, nur was Tester sehen oder bemerken.
+- Tests: `oberflaeche/src/Beta.test.tsx`, 2 neue. Oberfläche zusammen 39.
+
 ## 0.7.5 (10.11.2026)
 
 - Oberfläche, Darstellungen aus V2 entfernt, die V3 nicht verwendet: eigene Diagramme (`Diagramm.tsx`), eingeklappter Quellenbeleg, Knöpfe für andere Lesarten, samt CSS und Tests. Grundlage ist eine Zählung in der Beta-Ablage (nur gelesen, 11 Antworten aus 0.2.0 bis 0.7.0): keine einzige Antwort enthält eine solche Zeile (`genui`, `visualize`), Diagramme und Dashboards kamen immer als Datei, auch in den fünf Runden, die die Plugin-Anleitung zu solchen Zeilen gelesen haben.
