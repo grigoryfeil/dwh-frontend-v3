@@ -1,5 +1,4 @@
-// Schnittstelle zu dwh_v2/web.py. Schreibende Anfragen nur als JSON (Schutz in der Middleware).
-import type { Beleg } from "./antwort";
+// Schnittstelle zu web/app.py. Schreibende Anfragen nur als JSON (Schutz in der Middleware).
 
 export type Stufe = { stufe: string; status: "erledigt" | "aktiv" | "offen" | "uebersprungen" };
 export type Schritt = { s: number; text: string };
@@ -12,8 +11,6 @@ export type Runde = {
   ms?: number;
   zeit?: string; // Beginn der Runde, gesetzt vom Server
   dateien?: Datei[];
-  abfragen?: { sql: string; fehler: boolean }[]; // SQL der Runde für den Quellenbeleg
-  beleg?: Beleg[]; // Quellenbeleg der Anwendung (dwh_v2/beleg.py), seit 0.5.0 statt des Belegs vom Modell
   pruefung?: Pruefung;
   fehler?: string;
   abgebrochen?: boolean;
@@ -80,9 +77,6 @@ export async function exportieren(art: "pdf" | "xlsx", gespraeche: string[]): Pr
   return name;
 }
 export const stand = async (gespraech: string): Promise<Stand> => (await anfrage(`/api/gespraeche/${gespraech}`)).json();
-// Beta: gespeicherter Beispieldialog zum Lesen (Abnahme 6.8)
-export const beispiel = async (name: string): Promise<Runde[]> =>
-  (await (await anfrage(`/api/beispiele/${encodeURIComponent(name)}`)).json()).runden;
 export const abbrechen = (gespraech: string) => anfrage(`/api/gespraeche/${gespraech}/abbrechen`, json({}));
 export const beenden = (gespraech: string) =>
   anfrage(`/api/gespraeche/${gespraech}`, { method: "DELETE", headers: { "Content-Type": "application/json" } });

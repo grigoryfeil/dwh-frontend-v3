@@ -1,7 +1,6 @@
 {
-  "name": "dwh-frontend-v2-oberflaeche",
+  "name": "dwh-frontend-v3-oberflaeche",
   "private": true,
-  "version": "0.18.1",
   "type": "module",
   "scripts": {
     "dev": "vite",

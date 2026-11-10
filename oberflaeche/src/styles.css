@@ -470,6 +470,5 @@ input[type="checkbox"] { accent-color: var(--ink); }
 .beleg-teil { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
 .beleg-teil b { font-size: 12px; font-weight: 600; color: var(--text-2); }
 .beleg-teil ul { margin: 0; padding-left: 18px; }
-.beleg-teil pre { white-space: pre-wrap; margin: 4px 0 0; padding: 8px; background: var(--hover-tint); font-size: 12px; line-height: 18px; }
 .stufe-marke { margin-left: 8px; font-size: 11px; padding: 0 6px; border: 1px solid var(--rule); border-radius: 2px; color: var(--text-2); }
 .stufe-marke.offen { border-color: var(--chart-grey); }

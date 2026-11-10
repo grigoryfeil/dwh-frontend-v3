@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.4 (10.11.2026)
+
+- Oberfläche, Reste aus V2 entfernt, die V3 nachweislich nie erreicht. Am Aussehen ändert sich nichts (Bildvergleich gegen 0.7.3):
+  - Block „Queries“ im Quellenbeleg. Er hätte SQL gezeigt, sobald der Server welches mitschickt. Der Server schickt `abfragen` immer leer (Entscheidung Grigory, 08.11.2026), die Seite wertet das Feld jetzt gar nicht mehr aus. Ebenso das immer leere Feld `beleg`.
+  - Gespeicherter Beispieldialog über `?beispiel=<name>`: Das Backend von V3 hat die Route nie gehabt, jeder Aufruf endete mit „Example not found“.
+  - Paketname `dwh-frontend-v2-oberflaeche` mit Version 0.18.1 heißt jetzt `dwh-frontend-v3-oberflaeche`, ohne eigene Version (es gilt `VERSION`).
+- Bewusst nicht entfernt: eigene Diagramme, Quellenbeleg aus der Antwort, Knöpfe für andere Lesarten (`Diagramm.tsx`, `hostTeile`). V3 läuft mit demselben Daten-Plugin wie V2, dessen Anleitungen solche Zeilen in der Antwort verlangen können. Ohne den Code stünde dann rohes JSON im Text. Ob echte Antworten sie enthalten, ist offen.
+- Test: `App.test.tsx` 1 neuer (SQL erscheint nie auf der Seite). Oberfläche zusammen 38.
+
 ## 0.7.3 (10.11.2026)
 
 - Oberfläche, gestalterische Durchsicht (Auftrag Grigory: die letzten zehn Prozent). Aufbau und Arbeitsanzeige bleiben, geschärft sind Raster, Schrift und Zustände:

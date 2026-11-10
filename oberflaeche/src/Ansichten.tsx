@@ -487,7 +487,7 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
             <div className="nachweis-text" dangerouslySetInnerHTML={html(a.nachweis.html)} />
           </div>
         )}
-        <Quellenbeleg belege={a.quellen.length ? a.quellen : mitAnnahmen(zug.runde?.beleg ?? [], a.annahmen)} abfragen={(zug.runde?.abfragen ?? []).filter((q) => !q.fehler).map((q) => q.sql)} />
+        <Quellenbeleg belege={a.quellen.length ? a.quellen : ausAnnahmen(a.annahmen)} />
         {andere.length > 0 && (
           <div className="dateien">
             <b>Files</b>
@@ -505,8 +505,6 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
 
 const STUFE: Record<string, string> = { freigegeben: "approved", vorschlag: "provisional", "ohne Katalog": "not in catalogue" };
 
-// Eingeklappter Quellenbeleg: Definitionen mit Stufe, Quellen, Filter, Annahmen und die SQL der Runde. Seit 0.5.0 baut
-// ihn die Anwendung (runde.beleg), ein Beleg vom Modell in der Antwort geht vor.
 // Knöpfe für andere Lesarten, höchstens zwei (6.7, Runde 6), bei einer Nichtantwort die verwandte Auswertung
 function Lesarten(props: { lesarten: Lesart[]; arbeitet: boolean; onOption: (t: string) => void }) {
   if (!props.lesarten.length) return null;
@@ -521,8 +519,10 @@ function Lesarten(props: { lesarten: Lesart[]; arbeitet: boolean; onOption: (t: 
   );
 }
 
-function Quellenbeleg({ belege, abfragen }: { belege: Beleg[]; abfragen: string[] }) {
-  if (!belege.length && !abfragen.length) return null;
+// Eingeklappter Quellenbeleg aus den Host-Zeilen der Antwort: Definitionen mit Stufe, Quellen, Filter, Annahmen.
+// SQL zeigt die Seite nie (Entscheidung Grigory, 08.11.2026).
+function Quellenbeleg({ belege }: { belege: Beleg[] }) {
+  if (!belege.length) return null;
   const vorlaeufig = belege.some((b) => b.metricDefinitions.some((d) => d.stage !== "freigegeben"));
   const liste = (titel: string, eintraege: string[]) =>
     eintraege.length > 0 && (
@@ -559,22 +559,13 @@ function Quellenbeleg({ belege, abfragen }: { belege: Beleg[]; abfragen: string[
           {liste("Data sources", b.tables)}
         </div>
       ))}
-      {abfragen.length > 0 && (
-        <div className="beleg-teil">
-          <b>Queries</b>
-          {abfragen.map((q, i) => <pre key={i}><code>{q}</code></pre>)}
-        </div>
-      )}
     </details>
   );
 }
 
-// Beleg der Anwendung mit den Annahmen aus der Antwort (0.5.2)
-function mitAnnahmen(belege: Beleg[], annahmen: string[]): Beleg[] {
-  if (!annahmen.length) return belege;
-  const [erster, ...rest] = belege.length ? belege
-    : [{ title: "", metricDefinitions: [], tables: [], filters: [], assumptions: [], caveats: [] }];
-  return [{ ...erster, assumptions: [...new Set([...annahmen, ...erster.assumptions])] }, ...rest];
+// Annahmen-Zeile der Antwort (0.5.2) als Beleg, wenn das Modell keinen eigenen liefert
+function ausAnnahmen(annahmen: string[]): Beleg[] {
+  return annahmen.length ? [{ title: "", metricDefinitions: [], tables: [], filters: [], assumptions: annahmen, caveats: [] }] : [];
 }
 
 function titelAusName(name: string) {

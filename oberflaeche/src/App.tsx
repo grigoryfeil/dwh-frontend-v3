@@ -68,32 +68,12 @@ export default function App() {
     setPhase("login");
   }, [allesLeeren]);
 
-  // Beta: Mit ?beispiel=<name> zeigt die Seite einen gespeicherten Dialog zum Lesen (Abnahme 6.8)
-  const zeigeBeispiel = useCallback(async () => {
-    const name = new URLSearchParams(window.location.search).get("beispiel");
-    if (!name) return;
-    try {
-      const runden = await api.beispiel(name);
-      setZuege(
-        runden.map((r) => {
-          const zeit = new Date(r.zeit ?? Date.now());
-          return { id: ++zaehler.current, frage: r.frage, zeit, verify: false, runde: r, fertig: new Date(zeit.getTime() + (r.ms ?? 0)) };
-        }),
-      );
-      zeigeToast("Saved example", "Read only. A new question starts a new conversation.");
-    } catch (e) {
-      if (e instanceof Abgemeldet) return abgemeldet();
-      zeigeToast("Example not found", "Please check the link.");
-    }
-  }, [abgemeldet]);
-
   useEffect(() => {
     api.info().then(setInfo, () => {});
     api.ich().then(
       (i) => {
         setAblage(i.ablage);
         setPhase("app");
-        void zeigeBeispiel();
       },
       () => setPhase("login"),
     );
@@ -322,7 +302,6 @@ export default function App() {
     setPhase("app");
     api.info().then(setInfo, () => {});
     api.ich().then((i) => setAblage(i.ablage), () => {});
-    void zeigeBeispiel();
     return null;
   }
 

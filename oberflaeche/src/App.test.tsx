@@ -91,3 +91,45 @@ describe("Schalter Verify", () => {
     expect(document.activeElement).toBe(ort.querySelector("textarea"));
   });
 });
+
+describe("SQL der Runde", () => {
+  let ort: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    Element.prototype.scrollIntoView = () => {};
+    ort = document.body.appendChild(document.createElement("div"));
+    root = createRoot(ort);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    ort.remove();
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("erscheint nie auf der Seite, auch wenn der Server sie mitschickt", async () => {
+    vi.stubGlobal("fetch", async (url: string) => {
+      if (url === "/api/stand") return json({ datenstand: null, version: "0", zeitlimit: 600 });
+      if (url === "/api/ich") return json({ email: "t@x", ablage: false });
+      if (url === "/api/fragen") return json({ gespraech: "g" });
+      return json({ status: "fertig", runden: [{ frage: "Wie viele?", antwort: "Es sind 12.", abfragen: [{ sql: "SELECT geheim FROM t", fehler: false }] }] });
+    });
+    await act(async () => root.render(<App />));
+    await weiter();
+    const feld = ort.querySelector("textarea")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")!.set!.call(feld, "Wie viele?");
+      feld.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => knopf(ort, "Ask")!.click());
+    await act(async () => void (await vi.advanceTimersByTimeAsync(2100)));
+    expect(ort.textContent).toContain("Es sind 12.");
+    expect(ort.textContent).not.toContain("SELECT");
+    expect(ort.querySelector(".quellenbeleg")).toBeNull();
+  });
+});
