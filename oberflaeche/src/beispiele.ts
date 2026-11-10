@@ -1,12 +1,13 @@
 // Menü „Examples“ (Grigory 04.11.): zeigt, welche Darstellungen möglich sind, nicht welche Inhalte. Ein Klick setzt
-// die Frage ins Eingabefeld, ohne sie abzuschicken. Begriffe aus firmenbild/kern.md, keine Zahlen aus der Kopie.
+// die Frage ins Eingabefeld, ohne sie abzuschicken. Keine Zahlen in den Fragen. Am 10.11.2026 gegen V3 0.6.6 geprüft:
+// jede Frage antwortet ohne Rückfrage, das Dashboard in wenigen Minuten.
 export type Beispiel = { art: string; hinweis: string; frage: string; folge?: boolean };
 
 export const BEISPIELE: Beispiel[] = [
   {
     art: "Short answer",
     hinweis: "One figure, put in context",
-    frage: "Wie viele Neueinschreibungen hat der laufende Intake bisher, gemessen am Ziel?",
+    frage: "Wie hoch ist der aktuelle Studierendenbestand im Vergleich zum Vorjahr?",
   },
   {
     art: "Chart",
@@ -27,6 +28,6 @@ export const BEISPIELE: Beispiel[] = [
   {
     art: "Interactive dashboard",
     hinweis: "Charts and filters, a few minutes",
-    frage: "Erstelle ein interaktives Dashboard zum laufenden Intake: Opportunities und Enrollments je Campus im Vorjahresvergleich, filterbar nach Produkt.",
+    frage: "Erstelle ein interaktives Dashboard zu den neuen Leads je Monat im laufenden Jahr, filterbar nach Campus.",
   },
 ];
