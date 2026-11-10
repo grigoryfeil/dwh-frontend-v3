@@ -103,7 +103,7 @@ export function Login(props: { meta: string; meldung: string; onAnmelden: (email
 
 // Rahmen
 
-export function Kopf(props: { speichert: boolean; onBeispiele: () => void; onBeta: () => void; onExport: () => void; onReset: () => void; onAbmelden: () => void }) {
+export function Kopf(props: { speichert: boolean; menue: "beispiele" | "export" | "beta" | null; onBeispiele: () => void; onBeta: () => void; onExport: () => void; onReset: () => void; onAbmelden: () => void }) {
   return (
     <header className="kopf">
       <div className="kopf-links">
@@ -118,16 +118,16 @@ export function Kopf(props: { speichert: boolean; onBeispiele: () => void; onBet
             <span className="kurz">Saving</span>
           </span>
         )}
-        <button className="textknopf" onClick={props.onBeispiele}>
+        <button className="textknopf" aria-expanded={props.menue === "beispiele"} onClick={props.onBeispiele}>
           Examples
         </button>
-        <button className="textknopf" onClick={props.onExport}>
+        <button className="textknopf" aria-expanded={props.menue === "export"} onClick={props.onExport}>
           Export
         </button>
         <button className="textknopf" onClick={props.onReset}>
           Reset
         </button>
-        <button className="textknopf" onClick={props.onBeta}>
+        <button className="textknopf" aria-expanded={props.menue === "beta"} onClick={props.onBeta}>
           <span className="lang">Beta features</span>
           <span className="kurz">Beta</span>
         </button>
@@ -173,6 +173,12 @@ function useFokus(feld: { current: HTMLTextAreaElement | null }, fokus: number) 
   }, [fokus]);
 }
 
+// Verify schalten lässt den Cursor im Feld: Enter schickt danach die Frage ab, statt den Schalter erneut zu drücken
+function schalteVerify(feld: { current: HTMLTextAreaElement | null }, onVerify: () => void) {
+  onVerify();
+  feld.current?.focus();
+}
+
 export function Leer(props: Schalterleiste & Eingabe) {
   const feld = useRef<HTMLTextAreaElement>(null);
   useFokus(feld, props.fokus);
@@ -192,7 +198,7 @@ export function Leer(props: Schalterleiste & Eingabe) {
         />
         <div className="leer-zeile">
           <div className="schalter-gruppe">
-            <button className="pruefen" onClick={props.onVerify} aria-pressed={props.verify}>
+            <button className="pruefen" onClick={() => schalteVerify(feld, props.onVerify)} aria-pressed={props.verify}>
               <Schalter an={props.verify} gross />
               <span className="pruefen-text">
                 <b>
@@ -240,7 +246,7 @@ export function Folge(props: Schalterleiste & Eingabe & { arbeitet: boolean }) {
                 onChange={(e) => props.onEntwurf(e.target.value)}
                 onKeyDown={(e) => absendenMitEnter(e, props.onFrage)}
               />
-              <button className="pruefen" onClick={props.onVerify} aria-pressed={props.verify} title="Verified answers take longer.">
+              <button className="pruefen" onClick={() => schalteVerify(feld, props.onVerify)} aria-pressed={props.verify} title="Verified answers take longer.">
                 <Schalter an={props.verify} />
                 <b>Verify</b>
                 <small>takes longer</small>
@@ -382,8 +388,8 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
           <span>{zug.fertig ? uhrzeit(zug.fertig) : ""}</span>
         </div>
         <div className="spalte schmal">
-          <p className="titel22" dangerouslySetInnerHTML={html(a.titel)} />
-          <div className="text16" dangerouslySetInnerHTML={html(a.rest)} />
+          <p className="titel" dangerouslySetInnerHTML={html(a.titel)} />
+          <div className="fliesstext" dangerouslySetInnerHTML={html(a.rest)} />
           {a.art === "keine" && <Lesarten lesarten={a.lesarten} arbeitet={props.arbeitet} onOption={props.onOption} />}
           {a.art === "rueckfrage" && a.optionen.length > 0 && (
             <div className="optionen">
@@ -440,7 +446,7 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
         {a.lead && <p className="lead" dangerouslySetInnerHTML={html(a.lead)} />}
         <Lesarten lesarten={a.lesarten} arbeitet={props.arbeitet} onOption={props.onOption} />
         {a.kennzahlen.length > 0 && (
-          <div className="kennzahlen">
+          <div className="kennzahlen" data-n={a.kennzahlen.length}>
             {a.kennzahlen.map((k, i) => (
               <div key={i} className="kennzahl">
                 <div className="kennzahl-wert">
@@ -475,6 +481,12 @@ export function AntwortAbschnitt(props: { zug: Zug; n: number; arbeitet: boolean
             onOeffnen={() => props.onDashboard({ url: d.url, titel: titel[d.url] ?? titelAusName(d.name), nr: props.n, zeit: zug.fertig })}
           />
         ))}
+        {a.nachweis && (
+          <div className="nachweis" onClick={dashboardLink}>
+            <b>{a.nachweis.titel}</b>
+            <div className="nachweis-text" dangerouslySetInnerHTML={html(a.nachweis.html)} />
+          </div>
+        )}
         <Quellenbeleg belege={a.quellen.length ? a.quellen : mitAnnahmen(zug.runde?.beleg ?? [], a.annahmen)} abfragen={(zug.runde?.abfragen ?? []).filter((q) => !q.fehler).map((q) => q.sql)} />
         {andere.length > 0 && (
           <div className="dateien">
@@ -617,8 +629,8 @@ export function Unterbrochen(props: { zug: Zug; zeitlimit: number; onNochmal: ()
         <span>{uhrzeit(props.zug.fertig ?? props.zug.zeit)}</span>
       </div>
       <div className="spalte schmal unterbrochen">
-        <p className="titel18">{titel}</p>
-        <p className="text15">{text}</p>
+        <p className="titel">{titel}</p>
+        <p className="fliesstext">{text}</p>
         <button className="knopf" onClick={props.onNochmal}>
           {knopf}
         </button>

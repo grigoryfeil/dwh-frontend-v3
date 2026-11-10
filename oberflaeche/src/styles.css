@@ -1,4 +1,8 @@
-/* Richtung A „Executive Report“ (design_handoff_sae_data_desk/README.md). Werte aus dem Prototyp übernommen. */
+/* Richtung A „Executive Report“ (design_handoff_sae_data_desk/README.md). Werte aus dem Prototyp übernommen.
+   Seit 0.7.3 gilt für alles Neue:
+   - Schriftgrade 12, 13, 14, 16, 20, Frage 22 bis 26, Eingabe 24 bis 32, Laufzeit 40, Kennzahl 40 bis 56.
+   - Gewichte: 300 für Großes (Wortmarke, Eingabe, Frage, Kennzahl, Laufzeit), 400 zum Lesen, 500 und 600 für Beschriftung.
+   - Ein Raster: Kopf, Verlauf, Folgefrage und Fuß teilen die Außenkanten (--aussen), Fließtext läuft höchstens 680 px breit. */
 /* IBM Plex Sans, Latin, selbst gehostet (SIL OFL 1.1, schrift/OFL.txt): Die Seiten-CSP lädt nur von 'self' */
 @font-face {
   font-family: "IBM Plex Sans"; font-style: normal; font-display: swap; font-weight: 300;
@@ -34,6 +38,8 @@
   --scrim: rgba(28, 28, 28, 0.32);
   --orange: #ff6900;
   --seite: clamp(16px, 4cqw, 64px);
+  --aussen: max(var(--seite), calc((100cqw - 1120px) / 2));
+  --lesebreite: 680px;
 }
 
 html, body, #app { margin: 0; height: 100%; background: var(--paper); }
@@ -41,7 +47,10 @@ body { color: var(--ink); }
 a { color: var(--ink); }
 a:hover { color: var(--text-2); }
 textarea::placeholder, input::placeholder { color: var(--placeholder); }
-button { font: inherit; color: inherit; }
+button { font: inherit; color: inherit; transition: background-color .12s ease, color .12s ease, border-color .12s ease; }
+/* Tastaturfokus in der Farbe der Seite statt im Blau des Browsers */
+:is(button, a, summary, [role="button"], input[type="checkbox"]):focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 2px; }
+input[type="checkbox"] { accent-color: var(--ink); }
 [hidden] { display: none !important; }
 
 /* Lichtspur: hin und zurück in 9 s, je Weg weich an- und abgebremst. left statt transform, damit nichts übersteht */
@@ -72,7 +81,7 @@ button { font: inherit; color: inherit; }
   -webkit-font-smoothing: antialiased; text-wrap: pretty;
 }
 .dd p, .dd div { text-wrap: pretty; }
-[lang="de"] { hyphens: auto; }
+[lang="de"] { hyphens: auto; hyphenate-limit-chars: 12 5 5; } /* nur lange Wörter trennen */
 [lang="en"] { hyphens: manual; }
 
 .punkt { display: inline-block; background: var(--orange); vertical-align: baseline; }
@@ -82,8 +91,10 @@ button { font: inherit; color: inherit; }
 .knopf:hover { background: var(--ink-hover); }
 .knopf:disabled { cursor: default; background: var(--ink); opacity: 1; }
 .umriss { font-size: 14px; font-weight: 500; color: var(--ink); background: #fff; border: 1px solid var(--ink); border-radius: 2px; cursor: pointer; }
-.textknopf { font-size: 13px; font-weight: 500; background: none; border: 0; padding: 8px 12px; cursor: pointer; }
-.textknopf:hover { text-decoration: underline; }
+.umriss:hover:not(:disabled) { background: var(--ink); color: #fff; }
+.umriss:disabled { cursor: default; color: var(--placeholder); border-color: var(--rule); }
+.textknopf { font-size: 13px; font-weight: 500; background: none; border: 0; padding: 8px 12px; cursor: pointer; white-space: nowrap; text-underline-offset: 4px; }
+.textknopf:hover, .textknopf[aria-expanded="true"] { text-decoration: underline; }
 .unterstrichen { font-size: 13px; font-weight: 500; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; }
 
 /* Anmeldung */
@@ -110,6 +121,7 @@ button { font: inherit; color: inherit; }
   font: inherit; font-size: 16px; border: 0; border-bottom: 1px solid var(--ink); border-radius: 0; padding: 8px 0;
   outline: none; background: transparent; color: var(--ink);
 }
+.feld input:focus { box-shadow: 0 1px 0 0 var(--ink); }
 .login-form .knopf { height: 48px; margin-top: 8px; }
 .login-meldung { font-size: 13px; line-height: 20px; color: var(--ink); margin-top: -16px; }
 .meta { font-size: 12px; line-height: 16px; color: var(--text-3); }
@@ -118,23 +130,23 @@ button { font: inherit; color: inherit; }
 .app { display: flex; flex-direction: column; height: 100%; }
 .kopf {
   flex: 0 0 auto; height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
-  padding: 0 var(--seite); border-bottom: 1px solid var(--rule); box-sizing: border-box;
+  padding: 0 var(--aussen); border-bottom: 1px solid var(--rule); box-sizing: border-box;
 }
-.kopf-links { display: flex; align-items: center; gap: 16px; }
+.kopf-links { flex: 0 0 auto; display: flex; align-items: center; gap: 16px; }
 .kopf-links .marke { height: 48px; width: auto; margin: -8px -6px -8px -8px; }
 .kopf-links .trenner { width: 1px; height: 20px; background: var(--rule); }
-.kopf-links .name { font-size: 14px; font-weight: 500; }
+.kopf-links .name { font-size: 14px; font-weight: 500; white-space: nowrap; }
 .kopf-links .name .punkt { width: 4px; height: 4px; margin-left: 2px; }
-.kopf-rechts { display: flex; align-items: center; gap: 8px; }
+.kopf-rechts { display: flex; align-items: center; gap: 8px; margin-right: -12px; } /* Text des letzten Knopfs bündig zur Außenkante */
 .banner {
-  flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding: 12px var(--seite);
+  flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 24px; padding: 12px var(--aussen);
   border-bottom: 1px solid var(--ink); font-size: 13px; line-height: 20px;
 }
 .banner b { font-weight: 600; }
 .banner span { color: var(--text-2); }
 .fuss {
-  flex: 0 0 auto; height: 32px; display: flex; align-items: center; padding: 0 var(--seite);
-  border-top: 1px solid var(--rule); font-size: 11px; color: var(--text-3); box-sizing: border-box;
+  flex: 0 0 auto; height: 32px; display: flex; align-items: center; padding: 0 var(--aussen);
+  border-top: 1px solid var(--rule); font-size: 12px; color: var(--text-3); box-sizing: border-box;
 }
 
 /* Leerer Start */
@@ -166,32 +178,44 @@ button { font: inherit; color: inherit; }
 .schalter.klein.an i { top: 1px; left: 13px; width: 12px; height: 12px; border-radius: 6px; }
 
 /* Verlauf */
-.verlauf { flex: 1 1 auto; overflow: auto; padding: 0 var(--seite) 64px; }
-.verlauf-innen { max-width: 1120px; margin: 0 auto; }
+.verlauf { flex: 1 1 auto; overflow: auto; padding: 0 var(--aussen) 64px; }
 .abschnitt { display: flex; flex-wrap: wrap; gap: 8px 48px; }
+/* Randspalte und Text stehen auf derselben ersten Grundlinie */
+.abschnitt.frage, .abschnitt.zug { align-items: baseline; }
 .abschnitt.frage { padding: 48px 0 32px; border-top: 1px solid var(--ink); margin-top: 32px; scroll-margin-top: 0; }
+/* Die erste Frage braucht keine Trennlinie, über ihr steht schon die Linie des Kopfs */
+.verlauf-innen > div:first-child > .abschnitt.frage { border-top: 0; margin-top: 0; }
 .abschnitt.zug { padding-bottom: 16px; }
 .rand { flex: 0 0 160px; display: flex; flex-direction: column; font-size: 12px; line-height: 20px; }
 .rand b { font-weight: 600; }
 .rand span { color: var(--text-3); }
-.spalte { flex: 1 1 320px; min-width: 0; max-width: 800px; }
-.spalte.schmal { max-width: 680px; display: flex; flex-direction: column; gap: 12px; }
-.fragetext { font-size: clamp(22px, 2.4cqw, 28px); line-height: 1.3; font-weight: 500; letter-spacing: -0.01em; white-space: pre-wrap; }
+.spalte { flex: 1 1 320px; min-width: 0; }
+.spalte.schmal { max-width: var(--lesebreite); display: flex; flex-direction: column; gap: 12px; }
+/* Die Frage in der leichten Schrift der Eingabe: Sie gliedert, die Antwort trägt */
+.fragetext {
+  font-size: clamp(22px, 2.3cqw, 26px); line-height: 1.3; font-weight: 300; letter-spacing: -0.01em; white-space: pre-wrap;
+  max-width: 800px; hyphens: manual; overflow-wrap: break-word;
+}
 
 .antwort { display: flex; flex-direction: column; gap: 32px; }
-.lead { margin: 0; font-size: 22px; line-height: 32px; font-weight: 400; }
-.kennzahlen { display: grid; grid-template-columns: repeat(auto-fit, minmax(176px, 1fr)); gap: 24px 32px; }
+.lead { margin: 0; font-size: 20px; line-height: 30px; font-weight: 400; max-width: 720px; hyphens: manual; overflow-wrap: break-word; }
+/* Kennzahlen ohne einzelne Kachel in der letzten Zeile: vier stehen zu viert oder zwei mal zwei, fünf und sechs zu dritt */
+.kennzahlen { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 24px; }
+.kennzahlen[data-n="5"], .kennzahlen[data-n="6"] { grid-template-columns: repeat(3, 1fr); }
+@container (max-width: 1000px) { .kennzahlen[data-n="4"] { grid-template-columns: repeat(2, 1fr); } }
+@container (max-width: 640px) { .kennzahlen[data-n] { grid-template-columns: repeat(2, 1fr); } }
 .kennzahl { border-top: 1px solid var(--rule); padding-top: 16px; display: flex; flex-direction: column; gap: 8px; }
 .kennzahl-wert { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.kennzahl-wert b { font-size: 56px; line-height: 56px; font-weight: 300; letter-spacing: -0.03em; }
-.kennzahl-wert span { font-size: 18px; color: var(--text-2); }
+.kennzahl-wert b { font-size: clamp(40px, 4.4cqw, 56px); line-height: 1; font-weight: 300; letter-spacing: -0.03em; }
+.kennzahl-wert span { font-size: 16px; color: var(--text-2); }
 .kennzahl-label { font-size: 13px; line-height: 20px; color: var(--text-2); }
 
 /* Markdown der Antwort */
 .md { display: flex; flex-direction: column; gap: 16px; font-size: 16px; line-height: 26px; color: var(--text-body); }
 .md > * { margin: 0; }
-.md > p, .md > ul, .md > ol, .md > blockquote, .md > pre { max-width: 680px; }
-.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 { font-size: 14px; line-height: 20px; font-weight: 600; color: var(--ink); margin-top: 16px; margin-bottom: -4px; }
+.md > p, .md > ul, .md > ol, .md > blockquote, .md > pre, .md > h1, .md > h2, .md > h3, .md > h4, .md > h5, .md > h6 { max-width: var(--lesebreite); }
+.md h1, .md h2, .md h3, .md h4, .md h5, .md h6 { font-size: 16px; line-height: 26px; font-weight: 600; color: var(--ink); margin-top: 16px; margin-bottom: -8px; }
+.md > :first-child { margin-top: 0; }
 .md ul, .md ol { padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
 .md strong { font-weight: 600; color: var(--ink); }
 .md code { font-family: inherit; font-size: 0.94em; background: var(--hover-tint); padding: 0 4px; border-radius: 2px; }
@@ -202,17 +226,34 @@ button { font: inherit; color: inherit; }
 .md img { max-width: 100%; height: auto; display: block; }
 .md a { color: var(--ink); text-underline-offset: 3px; }
 .md .tabelle { overflow-x: auto; margin: 8px 0; }
-.tabelle table { width: 100%; border-collapse: collapse; font-size: 13px; line-height: 20px; min-width: 520px; color: var(--ink); }
-.tabelle th { text-align: left; font-weight: 500; color: var(--text-2); padding: 8px 0 8px 16px; border-bottom: 1px solid var(--ink); vertical-align: bottom; }
-.tabelle td { text-align: left; padding: 8px 0 8px 16px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+.tabelle table { width: 100%; border-collapse: collapse; font-size: 14px; line-height: 20px; min-width: 520px; color: var(--ink); }
+.tabelle th { text-align: left; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--text-2); padding: 0 0 10px 24px; border-bottom: 1px solid var(--ink); vertical-align: bottom; }
+.tabelle td { text-align: left; padding: 10px 0 10px 24px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+/* Die erste Spalte beginnt an der Textkante der Antwort */
+.tabelle th:first-child, .tabelle td:first-child { padding-left: 0; }
+.tabelle td strong { font-weight: 600; }
 .tabelle .zahl { text-align: right; white-space: nowrap; }
 
 .hinweis {
-  display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule);
-  padding: 16px 0; max-width: 680px;
+  display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--ink);
+  padding-top: 16px; max-width: var(--lesebreite);
 }
 .hinweis b { font-size: 12px; line-height: 16px; font-weight: 600; }
-.hinweis span { font-size: 15px; line-height: 24px; color: var(--text-body); }
+.hinweis span { font-size: 14px; line-height: 22px; color: var(--text-body); }
+
+/* Nachweis am Ende der Antwort: wie ein Fußnotenapparat, kleiner und ruhiger als der Text */
+.nachweis {
+  display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--rule); padding-top: 16px;
+  max-width: var(--lesebreite); font-size: 13px; line-height: 20px; color: var(--text-2);
+}
+.nachweis > b { font-size: 12px; line-height: 16px; font-weight: 600; color: var(--ink); }
+.nachweis-text { display: flex; flex-direction: column; gap: 8px; }
+.nachweis-text > * { margin: 0; }
+.nachweis ul, .nachweis ol { padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.nachweis li > p { margin: 0; }
+.nachweis li b, .nachweis strong { font-weight: 500; color: var(--ink); }
+.nachweis code { font-family: inherit; }
+.nachweis a { color: var(--ink); text-underline-offset: 3px; }
 
 .abbildung { margin: 0; display: flex; flex-direction: column; gap: 12px; }
 .abbildung img { max-width: 100%; height: auto; display: block; }
@@ -233,17 +274,15 @@ button { font: inherit; color: inherit; }
 .dash-text span { font-size: 13px; line-height: 20px; color: var(--text-2); }
 .dash-text .oeffnen { font-size: 14px; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; color: var(--ink); }
 
-.titel22 { margin: 0; font-size: 22px; line-height: 32px; font-weight: 500; }
-.text16 { font-size: 16px; line-height: 26px; color: var(--text-body); display: flex; flex-direction: column; gap: 16px; }
-.text16 > * { margin: 0; }
+.titel { margin: 0; font-size: 20px; line-height: 30px; font-weight: 500; }
+.fliesstext { margin: 0; font-size: 16px; line-height: 26px; color: var(--text-body); display: flex; flex-direction: column; gap: 16px; }
+.fliesstext > * { margin: 0; }
 .optionen { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .optionen button { font-size: 14px; color: var(--ink); background: #fff; border: 1px solid var(--ink); border-radius: 2px; height: 40px; padding: 0 16px; cursor: pointer; }
 .optionen button:hover:not(:disabled) { background: var(--ink); color: #fff; }
 .optionen button:disabled { cursor: default; color: var(--placeholder); border-color: var(--rule); }
 
 .unterbrochen { border-left: 1px solid var(--ink); padding-left: 24px; }
-.unterbrochen .titel18 { margin: 0; font-size: 18px; line-height: 28px; font-weight: 500; }
-.unterbrochen .text15 { margin: 0; font-size: 15px; line-height: 24px; color: var(--text-body); }
 .unterbrochen .knopf { align-self: flex-start; margin-top: 8px; height: 40px; padding: 0 20px; }
 
 /* Arbeit */
@@ -291,24 +330,35 @@ button { font: inherit; color: inherit; }
 .arbeit-hinweis { font-size: 12px; line-height: 16px; color: var(--text-3); }
 
 /* Folgefrage */
-.folge { flex: 0 0 auto; border-top: 1px solid var(--rule); padding: 16px var(--seite); }
-.folge-innen { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 8px 48px; align-items: flex-start; }
+.folge { flex: 0 0 auto; border-top: 1px solid var(--rule); padding: 16px var(--aussen); }
+.folge-innen { display: flex; flex-wrap: wrap; gap: 8px 48px; align-items: flex-start; }
 .folge-rand { flex: 0 0 160px; font-size: 12px; line-height: 20px; font-weight: 600; padding-top: 10px; }
-.folge-feld { flex: 1 1 320px; min-width: 0; max-width: 800px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+/* Feld, Schalter und Knopf sind einzeilig gleich hoch (40 px), bei mehreren Zeilen bleiben Schalter und Knopf unten */
+.folge-feld { flex: 1 1 320px; min-width: 0; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 24px; }
 .folge-feld textarea {
-  flex: 1 1 320px; min-width: 0; font: inherit; font-size: 17px; line-height: 24px; border: 0; padding: 8px 0; resize: none;
-  outline: none; background: transparent; color: var(--ink); max-height: 144px;
+  flex: 1 1 200px; min-width: 0; font: inherit; font-size: 16px; line-height: 24px; border: 0; padding: 8px 0; resize: none;
+  outline: none; background: transparent; color: var(--ink); max-height: 144px; box-sizing: border-box;
 }
+.folge .pruefen { height: 40px; padding: 0; }
 .folge .pruefen { gap: 8px; }
 .folge .pruefen b { font-size: 13px; font-weight: 500; }
 .folge .pruefen small { font-size: 12px; color: var(--text-3); }
-.folge .knopf { height: 40px; padding: 0 24px; }
-.folge-warten { font-size: 15px; line-height: 40px; color: var(--text-3); }
+.folge .knopf { height: 40px; padding: 0 24px; margin-left: auto; }
+/* Schmal: Randspalte als Zeile über dem Text, die Folgefrage ohne eigene Beschriftung, Tabellen dichter */
+@container (max-width: 640px) {
+  .rand:not(.arbeit-rand) { flex: 1 0 100%; flex-direction: row; gap: 8px; }
+  .folge-rand { display: none; }
+}
+@container (max-width: 800px) {
+  .tabelle table { min-width: 440px; }
+  .tabelle th, .tabelle td { padding-left: 16px; }
+}
+.folge-warten { font-size: 16px; line-height: 40px; color: var(--text-3); }
 
 /* Export, Toast, Overlay, Dialog */
 .auffang { position: absolute; inset: 0; z-index: 20; }
 .exportmenue {
-  position: absolute; top: 60px; right: var(--seite); width: 340px; max-width: calc(100% - 32px); background: #fff;
+  position: absolute; top: 63px; right: var(--aussen); width: 340px; max-width: calc(100% - 32px); background: #fff;
   border: 1px solid var(--ink); border-radius: 2px; z-index: 21; display: flex; flex-direction: column;
   animation: dd-fade .18s ease both;
 }
@@ -319,7 +369,7 @@ button { font: inherit; color: inherit; }
 .exportmenue button:hover:not(:disabled) { background: var(--hover-tint); }
 .exportmenue button:disabled { cursor: default; }
 .exportmenue button:disabled b { color: var(--placeholder); }
-.exportmenue b { font-size: 15px; font-weight: 600; }
+.exportmenue b { font-size: 14px; line-height: 20px; font-weight: 600; }
 .exportmenue span { font-size: 13px; line-height: 20px; color: var(--text-2); }
 /* Menü mit Beispielfragen, Kopf wie im Beta-Menü */
 .beispielmenue { width: 420px; max-height: calc(100vh - 80px); overflow-y: auto; }
@@ -333,7 +383,7 @@ button { font: inherit; color: inherit; }
 .exportmenue .beta-zeile { flex-direction: row; align-items: flex-start; gap: 12px; padding: 16px 24px; border-top: 1px solid var(--rule); }
 .beta-zeile .schalter { margin-top: 1px; }
 .beta-feedback { display: flex; flex-direction: column; gap: 10px; padding: 16px 24px 20px; border-top: 1px solid var(--rule); }
-.beta-feedback b { font-size: 15px; font-weight: 600; }
+.beta-feedback b { font-size: 14px; line-height: 20px; font-weight: 600; }
 .beta-feedback textarea {
   font: inherit; font-size: 14px; line-height: 20px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 2px; resize: vertical;
 }
@@ -344,17 +394,18 @@ button { font: inherit; color: inherit; }
 .beta-feedback .knopf:hover:not(:disabled) { background: var(--ink); }
 .beta-feedback .knopf:disabled { opacity: .4; cursor: default; }
 .beta-hinweis .kurz { display: none; }
-@media (max-width: 640px) { .beta-hinweis .lang { display: none; } .beta-hinweis .kurz { display: inline; } }
+@media (max-width: 860px) { .beta-hinweis .lang { display: none; } .beta-hinweis .kurz { display: inline; } }
 .textknopf .kurz { display: none; }
 /* Schmal: Kopf ohne Wortmarke und mit kurzen Knöpfen, damit Beispiele, Export, Reset und Beta sichtbar bleiben */
 @media (max-width: 480px) {
   .kopf-links .trenner, .kopf-links .name { display: none; }
-  .kopf-rechts { gap: 0; }
-  .kopf-rechts .textknopf { padding: 8px 6px; }
+  .kopf-rechts { gap: 0; margin-right: -5px; }
+  .kopf-rechts .textknopf { padding: 8px 5px; font-size: 12px; }
+  .beta-hinweis { padding: 0 6px 0 0; }
   .textknopf .lang { display: none; } .textknopf .kurz { display: inline; }
 }
 .toast {
-  position: absolute; left: 50%; bottom: 112px; transform: translateX(-50%); z-index: 22; background: var(--ink); color: #fff;
+  position: absolute; left: 0; right: 0; bottom: 112px; margin: 0 auto; width: fit-content; z-index: 22; background: var(--ink); color: #fff;
   border-radius: 2px; padding: 16px 24px; display: flex; align-items: center; gap: 32px; max-width: calc(100% - 32px);
   box-sizing: border-box; animation: dd-in .3s cubic-bezier(.2, 0, 0, 1) both;
 }
@@ -372,12 +423,12 @@ button { font: inherit; color: inherit; }
   padding: 16px 24px; border-bottom: 1px solid var(--ink);
 }
 .overlay-kopf div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; }
-.overlay-kopf strong { font-size: 18px; font-weight: 500; }
+.overlay-kopf strong { font-size: 16px; line-height: 24px; font-weight: 500; }
 .overlay-kopf span { font-size: 12px; color: var(--text-3); }
 .overlay-kopf .umriss { font-size: 13px; height: 32px; padding: 0 16px; }
 .overlay-rumpf { flex: 1 1 auto; overflow: hidden; background: #fff; display: flex; }
 .overlay-rumpf iframe { flex: 1; border: 0; width: 100%; height: 100%; background: #fff; }
-.overlay-fuss { flex: 0 0 auto; padding: 8px 24px; border-top: 1px solid var(--rule); font-size: 11px; color: var(--text-3); }
+.overlay-fuss { flex: 0 0 auto; padding: 8px 24px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--text-3); }
 .dialog-grund {
   position: absolute; inset: 0; z-index: 40; background: var(--scrim); display: flex; align-items: center; justify-content: center;
   padding: 24px; animation: dd-fade .2s ease both;
@@ -386,8 +437,8 @@ button { font: inherit; color: inherit; }
   width: 100%; max-width: 520px; background: #fff; border-radius: 2px; padding: 40px; display: flex; flex-direction: column;
   gap: 16px; box-sizing: border-box;
 }
-.dialog h2 { margin: 0; font-size: 24px; line-height: 32px; font-weight: 500; }
-.dialog p { margin: 0; font-size: 15px; line-height: 24px; color: var(--text-body); }
+.dialog h2 { margin: 0; font-size: 20px; line-height: 28px; font-weight: 500; }
+.dialog p { margin: 0; font-size: 16px; line-height: 26px; color: var(--text-body); }
 .dialog-fuss { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-top: 24px; }
 .dialog-fuss > button:first-child { font-size: 14px; font-weight: 500; background: none; border: 0; padding: 0; cursor: pointer; }
 .dialog-fuss div { display: flex; gap: 8px; }

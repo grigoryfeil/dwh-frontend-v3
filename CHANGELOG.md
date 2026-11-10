@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.3 (10.11.2026)
+
+- Oberfläche, gestalterische Durchsicht (Auftrag Grigory: die letzten zehn Prozent). Aufbau und Arbeitsanzeige bleiben, geschärft sind Raster, Schrift und Zustände:
+  - Ein Raster: Kopf, Verlauf, Folgefrage und Fuß teilen dieselben Außenkanten (höchstens 1120 px). Logo und Randspalte beginnen an derselben Linie, „Sign out“, Tabellen, Trennlinien und „Ask“ enden an derselben. Bisher gab es drei verschiedene rechte Kanten. Tabellen, Kennzahlen und Diagrammkarten nutzen die volle Spalte, Fließtext läuft höchstens 680 px breit.
+  - Schrift: Die Frage steht in der leichten Schrift der Eingabe (22 bis 26 px, vorher 28 px halbfett) und gliedert, statt die Antwort zu übertönen. Kernaussage 20 px. Die Zwischengrößen 11, 15, 17, 18, 22 und 24 px entfallen, es gelten 12, 13, 14, 16 und 20 px. Überschriften in der Antwort waren kleiner als ihr Text (14 px), jetzt 16 px halbfett.
+  - Nachweis: Der Abschnitt am Ende jeder Antwort steht als eigener, ruhiger Block mit Haarlinie, kleiner Schrift und hervorgehobenen Stichworten („Daten:“, „Zeitraum:“), statt als gewöhnlicher Text mit Aufzählungspunkten. Erkannt wird er an der Überschrift oder am fetten Wort „Nachweis“, „Evidence“, „Quellen“ oder „Sources“.
+  - Tabellen: erste Spalte bündig mit dem Text (vorher 16 px eingerückt), 14 px mit kleinerem Spaltenkopf, etwas mehr Luft je Zeile.
+  - Randspalte und Text stehen auf derselben Grundlinie. Die erste Frage hat keine Trennlinie mehr direkt unter der Linie des Kopfs.
+  - Kennzahlen ohne einzelne Kachel in der letzten Zeile (vier stehen zu viert oder zwei mal zwei).
+  - Zustände: Tastaturfokus in der Farbe der Seite statt im Blau des Browsers, offenes Menü am Knopf unterstrichen, Umrissknöpfe mit Hover, Haken im Beta-Menü schwarz statt blau.
+  - Schmal (Tablet, Telefon): Kopf bricht nicht mehr um („Sign out“, Wortmarke), Randspalte als Zeile über dem Text, Folgefrage ohne eigene Beschriftung, „Ask“ bleibt in der Zeile des Schalters.
+- Behoben:
+  - Die Meldung unten („PDF report ready“) stand nicht mittig, sondern begann in der Mitte: Die Einblendung überschrieb den Versatz.
+  - Das Folgefeld war 16 px zu hoch, der Text stand deshalb über der Mitte von Schalter und Knopf.
+  - Nach dem Umschalten von Verify lag der Fokus auf dem Schalter, Enter schaltete ihn wieder aus, statt die Frage zu senden. Der Cursor bleibt jetzt im Feld.
+  - Silbentrennung trennte kurze Wörter („stam-men“) und Wörter in Frage und Kernaussage („Op-portunity“). Getrennt werden nur noch lange Wörter im Fließtext.
+- Tests: `antwort.test.ts` 4 neue (Nachweis), `App.test.tsx` 1 neuer (Verify). Oberfläche zusammen 37.
+
 ## 0.7.2 (10.11.2026)
 
 - Oberfläche, Arbeitsanzeige während eine Antwort entsteht (Wunsch Grigory, Variante B aus drei Entwürfen):

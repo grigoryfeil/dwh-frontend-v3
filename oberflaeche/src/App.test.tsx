@@ -61,3 +61,33 @@ describe("Abbruch einer laufenden Runde", () => {
     expect(knopf(ort, "Cancel")!.disabled).toBe(true);
   });
 });
+
+describe("Schalter Verify", () => {
+  let ort: HTMLElement;
+  let root: Root;
+
+  beforeEach(() => {
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    vi.stubGlobal("fetch", async (url: string) =>
+      url === "/api/stand" ? json({ datenstand: null, version: "0", zeitlimit: 600 }) : json({ email: "t@x", ablage: false }));
+    ort = document.body.appendChild(document.createElement("div"));
+    root = createRoot(ort);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    ort.remove();
+    vi.unstubAllGlobals();
+  });
+
+  it("lässt den Cursor im Fragefeld, damit Enter die Frage abschickt", async () => {
+    await act(async () => root.render(<App />));
+    await act(async () => void (await new Promise((r) => setTimeout(r, 0))));
+    const schalter = ort.querySelector<HTMLButtonElement>(".pruefen")!;
+    schalter.focus();
+    await act(async () => schalter.click());
+    expect(schalter.getAttribute("aria-pressed")).toBe("true");
+    expect(document.activeElement).toBe(ort.querySelector("textarea"));
+  });
+});

@@ -31,9 +31,11 @@ export type Beleg = {
   caveats: string[];
 };
 export type Lesart = { label: string; prompt: string };
+export type Nachweis = { titel: string; html: string };
 export type Antwort =
   | { art: "antwort"; lead: string; kennzahlen: Kennzahl[]; rest: string; tabellen: number; bilder: string[];
-      diagramme: Diagramm[]; quellen: Beleg[]; annahmen: string[]; lesarten: Lesart[]; unvollstaendig: boolean }
+      diagramme: Diagramm[]; quellen: Beleg[]; annahmen: string[]; lesarten: Lesart[]; unvollstaendig: boolean;
+      nachweis: Nachweis | null }
   | { art: "keine"; titel: string; rest: string; lesarten: Lesart[] }
   | { art: "rueckfrage"; titel: string; rest: string; optionen: string[] }
   | { art: "kurzklaerung"; titel: string; rest: string; optionen: string[] };
@@ -275,6 +277,38 @@ function istListe(block: Token[]) {
   return block[0].type === "bullet_list_open" || block[0].type === "ordered_list_open";
 }
 
+const NACHWEIS = /^(nachweis|evidence|sources?|quellen)\s*:?$/i;
+
+// Abschnitt „Nachweis“ am Ende der Antwort (harness/anweisung.md): ab seiner Überschrift oder ab dem Absatz, der mit
+// dem fetten Wort beginnt, bis zum Schluss. Die Seite setzt ihn als eigenen Block ab. Stichworte vor dem Doppelpunkt
+// eines Listenpunkts („Daten:“, „Zeitraum:“) werden hervorgehoben.
+function nachweisAus(bl: Token[][], ab: number, md: ReturnType<typeof markdownit>, env: Record<string, unknown>): { ab: number; nachweis: Nachweis } | null {
+  for (let i = bl.length - 1; i >= ab; i--) {
+    const [auf, inhalt] = bl[i];
+    let titel = "";
+    let anfang: Token[] = [];
+    if (auf.type === "heading_open" && NACHWEIS.test((inhalt?.content ?? "").replace(/[*_]/g, "").trim())) {
+      titel = inhalt.content.replace(/[*_:]/g, "").trim();
+    } else if (auf.type === "paragraph_open") {
+      const k = (inhalt?.children ?? []).filter((t) => t.type !== "text" || t.content !== ""); // markdown-it setzt leere Texte davor
+      if (k[0]?.type !== "strong_open" || k[1]?.type !== "text" || k[2]?.type !== "strong_close" || !NACHWEIS.test(k[1].content.trim())) continue;
+      titel = k[1].content.replace(":", "").trim();
+      // Text im selben Absatz („**Nachweis:** Daten …“) bleibt als erster Absatz des Blocks
+      const rest = k.slice(3);
+      while (rest[0]?.type === "softbreak" || rest[0]?.type === "hardbreak") rest.shift();
+      if (rest[0]?.type === "text") rest[0].content = rest[0].content.replace(/^\s*:?\s*/, "");
+      if (rest.some((t) => t.type !== "text" || t.content.trim())) {
+        inhalt.children = rest;
+        anfang = bl[i];
+      }
+    } else continue;
+    const html = md.renderer.render([...anfang, ...bl.slice(i + 1).flat()], md.options, env)
+      .replace(/<li>(\s*<p>)?([^<:]{2,30}:)(?=\s)/g, (_t, p: string | undefined, wort: string) => `<li>${p ?? ""}<b>${wort}</b>`);
+    return { ab: i, nachweis: { titel, html } };
+  }
+  return null;
+}
+
 // Höchstens zwei Knöpfe für andere Lesarten (6.7, Runde 6), gleiche Beschriftung nur einmal
 function lesartenAus(teile: HostTeil[]): Lesart[] {
   const lesarten = new Map<string, Lesart>();
@@ -330,14 +364,15 @@ export function zerlege(text: string, gespraech: string | null): Antwort {
   }
   const kz = ab === 1 ? kennzahlen(bl[1], md) : null;
   if (kz) ab = 2;
-  const rest = md.renderer.render(bl.slice(ab).flat(), md.options, env);
+  const beleg = nachweisAus(bl, ab, md, env);
+  const rest = md.renderer.render(bl.slice(ab, beleg?.ab).flat(), md.options, env);
   const tabellen = tokens.filter((t) => t.type === "table_open").length;
   const diagramme = host.teile.filter((t) => t.name === "charts_widget_v2" && objekt(t.inhalt)).map((t) => t.inhalt as Diagramm);
   const lesarten = lesartenAus(host.teile);
   // Annahmen der Abfrage, seit 0.5.2 eine eigene Zeile des Modells, die die Seite an den Beleg der Anwendung hängt
   const annahmen = [...new Set(host.teile.filter((t) => t.name === "assumptions").flatMap((t) => texte(t.inhalt)))];
   return { art: "antwort", lead, kennzahlen: kz ?? [], rest, tabellen, bilder, diagramme, quellen: quellen(host.teile), annahmen, lesarten,
-    unvollstaendig: host.teile.some((t) => t.name === "ungueltig") };
+    unvollstaendig: host.teile.some((t) => t.name === "ungueltig"), nachweis: beleg?.nachweis ?? null };
 }
 
 // Prüfhinweis: ein bis zwei Sätze, Links wie in der Antwort

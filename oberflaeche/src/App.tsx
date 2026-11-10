@@ -342,6 +342,7 @@ export default function App() {
       <div className="app">
         <Kopf
           speichert={ablage && speichern}
+          menue={menue}
           onBeispiele={() => umschalten("beispiele")}
           onBeta={() => umschalten("beta")}
           onExport={() => (hatErgebnis ? umschalten("export") : setMenue(null))}

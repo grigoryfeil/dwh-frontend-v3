@@ -172,3 +172,37 @@ describe("Host-Verträge", () => {
     expect(a).toMatchObject({ art: "kurzklaerung", titel: "Ich baue ein Dashboard zu Leads.", optionen: ["Zeitraum? Vorschlag: 2026 bis heute", "Gliederung? Vorschlag: nach Standort"] });
   });
 });
+
+describe("Nachweis am Ende der Antwort", () => {
+  const antwort = (text: string) => {
+    const a = zerlege(text, G);
+    if (a.art !== "antwort") throw new Error();
+    return a;
+  };
+
+  it("fetter Absatz mit Liste wird ein eigener Block, Stichworte hervorgehoben", () => {
+    const a = antwort("Ergebnis.\n\n| A | B |\n|---|---|\n| x | 1 |\n\n**Nachweis**\n\n- Daten: Bestand je Stichtag.\n- Zeitraum: 2026.\n");
+    expect(a.nachweis).toEqual({ titel: "Nachweis", html: "<ul>\n<li><b>Daten:</b> Bestand je Stichtag.</li>\n<li><b>Zeitraum:</b> 2026.</li>\n</ul>\n" });
+    expect(a.rest).toContain("<table>");
+    expect(a.rest).not.toContain("Nachweis");
+    expect(a.rest).not.toContain("Bestand je Stichtag");
+  });
+
+  it("Überschrift und englisches Wort", () => {
+    const a = antwort("Result.\n\nSome text.\n\n## Evidence\n\nBooked revenue, intake September 2026.");
+    expect(a.nachweis).toEqual({ titel: "Evidence", html: "<p>Booked revenue, intake September 2026.</p>\n" });
+    expect(a.rest).toBe("<p>Some text.</p>\n");
+  });
+
+  it("Text im selben Absatz bleibt erhalten", () => {
+    const a = antwort("Ergebnis.\n\n**Nachweis:** Daten aus dem CRM, Stichtag 6. November 2026.");
+    expect(a.nachweis).toEqual({ titel: "Nachweis", html: "<p>Daten aus dem CRM, Stichtag 6. November 2026.</p>\n" });
+    expect(a.rest).toBe("");
+  });
+
+  it("ohne Nachweis bleibt alles im Text, auch fette Zwischentitel", () => {
+    const a = antwort("Ergebnis.\n\n**Einordnung**\n\nNachweis führen wir später.");
+    expect(a.nachweis).toBeNull();
+    expect(a.rest).toContain("<strong>Einordnung</strong>");
+  });
+});
