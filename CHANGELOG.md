@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0 (10.11.2026)
+
+- Export: Die Knöpfe „PDF report“ und „Excel“ funktionieren. Bisher fehlte die Gegenstelle auf dem Server, jeder Klick endete mit „Export failed“. Übernommen aus V2 und auf das Antwortformat von V3 umgestellt (`web/antwort.py`, `web/bericht.py`, `web/excel.py`, Routen `/api/export.pdf` und `/api/export.xlsx`).
+  - PDF: alle beantworteten Runden des Verlaufs mit Frage, Kernaussage, Tabellen, Text, Nachweis und dem Ergebnis von Verify, Kopf und Fuß mit Datenstand und Version. Diagramme und Dashboards sind HTML-Seiten des Modells und erscheinen als Hinweiskasten mit Titel, ihr Skript läuft auf dem Server nicht (Entscheidung Grigory, 10.11.2026). Bilder stehen im Report.
+  - Excel: ein Blatt je Antwort mit Tabelle, oben Frage, Kernaussage und Datenstand. Zahlen nach der Schreibweise der Antwortsprache werden echte Zahlen, Prozente Anteile im Prozentformat, Formelanfänge bleiben Text.
+  - Nur eigene Gespräche der Session, fremde Kennungen fallen still weg. Ohne Tabelle kein Excel (409).
+- Betrieb: neue Abhängigkeiten `reportlab==5.0.1` und `markdown-it-py==4.2.0` (wie in V2), Schrift IBM Plex (OFL) und Logo unter `web/druck/`.
+- Tests: `tests/test_export.py`, 8 neue. Backend zusammen 22.
+
 ## 0.6.8 (10.11.2026)
 
 - Beispielfragen (Menü „Examples“) gegen 0.6.6 geprüft und zwei ersetzt. Die Kurzantwort „Neueinschreibungen des laufenden Intakes gemessen am Ziel“ endete immer in einer Rückfrage (welcher Intake), ersetzt durch den Studierendenbestand im Vorjahresvergleich (48 s). Das Dashboard zum laufenden Intake brauchte 8,5 Minuten, zu lang für ein Beispiel, ersetzt durch neue Leads je Monat mit Campusfilter (4,3 Minuten). Diagramm, Vergleich und Nachfrage beantworten ohne Rückfrage.

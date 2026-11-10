@@ -12,7 +12,8 @@ domain=dwhv3.152-53-125-222.sslip.io
 konten=/etc/dwh-frontend-v3/konten.json
 zugang=/etc/dwh-frontend-v3/zugang  # Testkonto für Grigory: Benutzer und Passwort, nur root (0600)
 
-/opt/dwh-frontend-v3/venv/bin/pip install -q "starlette==1.10.0" "uvicorn==0.54.0"
+/opt/dwh-frontend-v3/venv/bin/pip install -q "starlette==1.10.0" "uvicorn==0.54.0" \
+  "reportlab==5.0.1" "markdown-it-py==4.2.0"  # Export als PDF (web/bericht.py), wie in V2
 
 # Beta-Ablage der Gespräche: nur Dienst und root
 install -d -m 0700 -o dwhv3 -g dwhv3 /var/lib/dwh-frontend-v3/ablage

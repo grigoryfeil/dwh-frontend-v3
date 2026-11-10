@@ -6,8 +6,8 @@ Runden offen bleibt. Nach Leerlauf, bei Platzmangel oder nach einem Fehler ruht 
 Dateien bleiben, die nächste Frage setzt mit dem sichtbaren Verlauf fort. Gespräche liegen nur im Arbeitsspeicher und gehören der Session, die
 sie begonnen hat. Endet die Session, enden ihre Gespräche. TLS übernimmt nginx.
 
-Bedient wird nur, was die Oberfläche braucht. Export und Beispiele gibt es nicht, die Oberfläche kommt ohne sie aus
-(Antwort 404). Ablage und Feedback gibt es nur mit eingeschalteter Beta-Ablage, sonst `ablage: false`. Felder ohne V3-Gegenstück (`beleg`, `abfragen`) bleiben
+Bedient wird nur, was die Oberfläche braucht. Beispiele gibt es nicht, die Oberfläche kommt ohne sie aus (Antwort 404).
+Den Export als PDF und Excel bauen web/bericht.py und web/excel.py aus den beantworteten Runden der eigenen Gespräche. Ablage und Feedback gibt es nur mit eingeschalteter Beta-Ablage, sonst `ablage: false`. Felder ohne V3-Gegenstück (`beleg`, `abfragen`) bleiben
 leer. SQL geht nie an die Seite (Entscheidung Grigory, 08.11.2026), `abfragen` bleibt deshalb immer leer. Mit dem
 Schalter `verifizieren` prüft ein zweites Gespräch die Antwort (harness/pruefung.py), das Ergebnis steht in `pruefung`. Dateien, die die Antwort im eigenen Gesprächsverzeichnis nennt (etwa
 Diagramme und Dashboards), übersetzt web/dateien.py in `dateien` und liefert nur diese aus. Mit eingeschalteter
@@ -43,12 +43,14 @@ import lauf  # noqa: E402
 import pruefung  # noqa: E402
 from sitzung import Gespraech, Sitzungsfehler  # noqa: E402
 
-from web import ablage as ablage_modul, dateien, fortschritt, konten  # noqa: E402
+from web import ablage as ablage_modul, antwort as antwort_modul, bericht, dateien, excel, fortschritt  # noqa: E402
+from web import konten  # noqa: E402
 
 STATISCH = HIER / "statisch"  # Build von oberflaeche/ (npm run build), eingecheckt, der VPS braucht kein npm
 ASSET = re.compile(r"[\w-]+\.(js|css|woff2|svg)")
 ASSET_ARTEN = {"js": "text/javascript", "css": "text/css", "woff2": "font/woff2", "svg": "image/svg+xml"}
 KENNUNG = re.compile(r"[0-9a-f]{32}")
+XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 VERLAUF_RUNDEN, VERLAUF_ZEICHEN = 6, 4000  # Verlaufsvorspann nach einer Pause (an_das_modell)
 COOKIE = "__Host-dwhv3"
 SEITEN_KOEPFE = {
@@ -675,6 +677,11 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                                   sekunden=eintrag.fortschritt.sekunden())
             return JSONResponse({"status": eintrag.status, "runden": runden})
 
+    def oeffne_gemeldet(eintrag, nummer, name):
+        """Gemeldete Datei einer Runde: der gesicherte Stand der Runde, ohne Sicherung der aktuelle. Sonst None."""
+        datei_ = dateien.oeffne(eintrag.runden_ort, f"{nummer}/{name}") if nummer and eintrag.runden_ort else None
+        return datei_ or dateien.oeffne(eintrag.cwd, name)
+
     def datei(request):
         """Nur Dateien, die eine Antwort dieses Gesprächs gemeldet hat (web/dateien.py)."""
         s = hole_session(request)
@@ -685,17 +692,73 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             eintrag = eigenes(request, s)
             gemeldet = eintrag is not None and any(d["name"] == name for i, r in enumerate(eintrag.runden, 1)
                                                    if nummer in (None, i) for d in r.get("dateien") or [])
-        datei_ = None
-        if gemeldet and nummer and eintrag.runden_ort:
-            datei_ = dateien.oeffne(eintrag.runden_ort, f"{nummer}/{name}")
-        if gemeldet and datei_ is None:  # ohne Sicherung der aktuelle Stand
-            datei_ = dateien.oeffne(eintrag.cwd, name)
+        datei_ = oeffne_gemeldet(eintrag, nummer, name) if gemeldet else None
         if datei_ is None:
             return fehler(404, "Datei unbekannt")
         with datei_:
             inhalt = datei_.read(50_000_000)
         inhalt, art, koepfe = dateien.auslieferung(name, inhalt, request.headers.get("sec-fetch-dest"))
         return Response(inhalt, media_type=art, headers=koepfe)
+
+    def beantwortete(request, s):
+        """Beantwortete Runden (Eintrag, Nummer, Runde) der genannten eigenen Gespräche in dieser Reihenfolge, ohne
+        laufende, abgebrochene und gescheiterte. Die Seite nennt alle Gespräche ihres Verlaufs, nach einem Fehler sind
+        es mehrere. Fremde und unbekannte Kennungen fallen still weg."""
+        kennungen = list(dict.fromkeys(request.query_params.get("gespraeche", "").split(",")))[:50]
+        with sperre:
+            eintraege = [gespraeche.get(k) for k in kennungen if KENNUNG.fullmatch(k)]
+            return [(e, nummer, dict(r)) for e in eintraege if e is not None and e.besitzer == s.ref
+                    for nummer, r in enumerate(e.runden, 1) if r.get("antwort")]
+
+    def herunterladen(inhalt, art, name, endung):
+        heute = datetime.date.today().isoformat()
+        return Response(inhalt, media_type=art, headers={
+            "Content-Disposition": f'attachment; filename="SAE-Data-Desk-{name}-{heute}.{endung}"',
+            "X-Content-Type-Options": "nosniff", "Cache-Control": "no-store"})
+
+    def export_pdf(request):
+        s = hole_session(request)
+        if s is None:
+            return nicht_angemeldet()
+        runden = beantwortete(request, s)
+        if not runden:
+            return fehler(409, "Noch keine Antwort zum Exportieren")
+        zuege = []
+        for eintrag, nummer, runde in runden:
+            namen = [d["name"] for d in runde.get("dateien") or []]
+
+            def lese(name, eintrag=eintrag, nummer=nummer, namen=namen):
+                datei_ = oeffne_gemeldet(eintrag, nummer, name) if name in namen else None
+                if datei_ is None:
+                    return None
+                with datei_:
+                    return datei_.read(dateien.GROESSE_MAX)
+
+            zuege.append({"frage": runde["frage"], "zeit": (runde.get("zeit") or "")[11:16], "antwort": runde["antwort"],
+                          "gespraech": eintrag.kennung, "dateien": namen, "pruefung": runde.get("pruefung"),
+                          "lese": lese})
+        stand, _ = datenstand()
+        inhalt = bericht.pdf(zuege, stand, version(), datetime.date.today())
+        return herunterladen(inhalt, "application/pdf", "Report", "pdf")
+
+    def export_excel(request):
+        s = hole_session(request)
+        if s is None:
+            return nicht_angemeldet()
+        stand, _ = datenstand()
+        blaetter = []
+        for nummer, (eintrag, _, runde) in enumerate(beantwortete(request, s), start=1):
+            zerlegt = antwort_modul.zerlege(runde["antwort"], eintrag.kennung)
+            tabellen = antwort_modul.tabellen(zerlegt)
+            if tabellen:
+                kopf = [("Question", runde["frage"]), ("Answer", zerlegt.get("lead_text", ""))]
+                if stand:
+                    kopf.append(("Data as of", bericht.datum_kurz(stand)))
+                blaetter.append({"name": f"Question {nummer:02d}", "kopf": kopf, "tabellen": tabellen,
+                                 "sprache": antwort_modul.sprache(runde["antwort"])})
+        if not blaetter:
+            return fehler(409, "Keine Tabellen im Gespräch")
+        return herunterladen(excel.mappe(blaetter), XLSX, "Tables", "xlsx")
 
     async def speichern_schalten(request):
         """Beta: Speichern an oder aus, gilt für jede Runde, die danach endet. Einschalten legt auch die früheren
@@ -828,6 +891,8 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         Route("/api/gespraeche/{kennung}/dateien/{name:path}", datei),
         Route("/api/gespraeche/{kennung}/speichern", speichern_schalten, methods=["POST"]),
         Route("/api/feedback", feedback, methods=["POST"]),
+        Route("/api/export.pdf", export_pdf),
+        Route("/api/export.xlsx", export_excel),
     ]
     return Starlette(routes=routen, middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=e.hosts),
                                                 Middleware(Schutz)])
