@@ -4,12 +4,23 @@ der Unit, Rückbau vor einer echten Auslieferung.
     <wurzel>/<datum>/<gespraech>/gespraech.json        Benutzer, Versionen, Datenstand, alle Runden vollständig
     <wurzel>/<datum>/<gespraech>/dateien/<runde>/...   in der Runde erzeugte oder geänderte Dateien (Diagramme)
     <wurzel>/anweisungen/<prüfsumme>.txt               Anweisung an das Modell, je Fassung einmal
-    <wurzel>/feedback/<zeit>-<zufall>.json             Rückmeldungen aus dem Beta-Menü
+    <wurzel>/feedback/<zeit>-<zufall>.json             Rückmeldungen aus dem Beta-Menü, je Rückmeldung eine Datei
+    <wurzel>/nutzung/<JJJJ-MM>.jsonl                   Nutzerlog: je Ereignis eine Zeile, nur angehängt
 
 Je Runde: Frage, Antwort (Markdown), Zeit, Dauer, Token und jeder Schritt in Reihenfolge: SQL mit Ergebnis (Spalten
 und Zeilen, so weit das Werkzeug sie liefert), Shell-Befehle mit Ausgabe, Denkzusammenfassungen, Zwischennachrichten.
-`gespraech.json` wird nach jeder Runde neu geschrieben. Ordner 0700, Dateien 0600, Eigentümer ist der Dienst
-(dwhv3), sonst nur root. Die Webanwendung schreibt hier nur, keine Route liest daraus.
+`gespraech.json` wird nach jeder Runde neu geschrieben und nennt Benutzer und Sitzung. Eine Rückmeldung nennt
+Benutzer, Sitzung, Version, Datenstand, das Gespräch und, wenn es beigefügt wurde, dessen Ort in der Ablage.
+
+Nutzerlog: Ereignisse `anmeldung`, `speichern` (Schalter eines Gesprächs an oder aus), `runde` (Ende einer Runde:
+Status und Dauer, kein Inhalt), `feedback`, `ende` (Sitzungsende mit Grund, `aktiv_s` ist die Zeit von der Anmeldung
+bis zur letzten Anfrage) und `dienststart`. Die Kennung `sitzung` verbindet die Zeilen einer Sitzung mit ihren
+Gesprächen und Rückmeldungen. Eine Sitzung steht nur im Log, wenn in ihr ein Gespräch mit eingeschaltetem Speichern
+lief (web/app.py), Runden nur von Gesprächen, deren Schalter an ist. Zeilen einer Sitzung, die schon vor dem
+Einschalten anfielen, werden dann nachgetragen: Die Datei ist deshalb nicht streng nach Zeit sortiert.
+
+Jede Datei wird bis auf die Platte geschrieben (fsync), bevor sie ihren Namen bekommt. Ordner 0700, Dateien 0600,
+Eigentümer ist der Dienst (dwhv3), sonst nur root. Die Webanwendung schreibt hier nur, keine Route liest daraus.
 """
 
 import datetime
@@ -20,6 +31,7 @@ import secrets
 import shutil
 import stat
 import sys
+import threading
 from pathlib import Path
 
 DATEI_MAX = 50_000_000  # größere Dateien bleiben liegen, das Modell könnte die Platte füllen
@@ -91,6 +103,7 @@ def neue_dateien(vorher, jetzt):
 class Ablage:
     def __init__(self, wurzel):
         self.wurzel = Path(wurzel)
+        self._nutzung_sperre = threading.Lock()
 
     def _ordner(self, *teile):
         """Jede Stufe einzeln mit 0700, mkdir mit parents gäbe den Zwischenstufen die Umask."""
@@ -103,14 +116,31 @@ class Ablage:
 
     @staticmethod
     def _schreibe(pfad, inhalt):
-        """Erst in eine temporäre Datei, dann umbenennen: Wer liest, sieht nie eine halbe Datei."""
+        """Erst in eine temporäre Datei, dann umbenennen: Wer liest, sieht nie eine halbe Datei. Inhalt und Name
+        gehen vor der Rückkehr auf die Platte, ein Absturz des Servers kostet keine schon gemeldete Datei."""
         zwischen = pfad.with_name(f".{pfad.name}.{secrets.token_hex(4)}")
-        with os.fdopen(os.open(zwischen, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as datei:
-            if isinstance(inhalt, bytes):
-                datei.write(inhalt)
-            else:
-                shutil.copyfileobj(inhalt, datei)
-        os.replace(zwischen, pfad)
+        try:
+            with os.fdopen(os.open(zwischen, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600), "wb") as datei:
+                if isinstance(inhalt, bytes):
+                    datei.write(inhalt)
+                else:
+                    shutil.copyfileobj(inhalt, datei)
+                datei.flush()
+                os.fsync(datei.fileno())
+            os.replace(zwischen, pfad)
+        except BaseException:
+            zwischen.unlink(missing_ok=True)  # keine halben Zwischendateien liegen lassen
+            raise
+        Ablage._fest(pfad.parent)
+
+    @staticmethod
+    def _fest(ordner):
+        """Den Verzeichniseintrag auf die Platte bringen."""
+        fd = os.open(ordner, os.O_RDONLY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
 
     @staticmethod
     def _json(daten):
@@ -148,9 +178,29 @@ class Ablage:
         return abgelegt
 
     def feedback(self, daten):
-        name = f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S')}-{secrets.token_hex(4)}.json"
+        # Mikrosekunden: Die Namen sortieren nach Eingang, auch bei zwei Rückmeldungen in einer Sekunde
+        name = f"{datetime.datetime.now().strftime('%Y%m%dT%H%M%S%f')}-{secrets.token_hex(4)}.json"
         self._schreibe(self._ordner("feedback") / name, self._json(daten))
         return name
+
+    def nutzung(self, zeilen):
+        """Hängt Ereignisse an das Nutzerlog des Monats an, in dem sie anfielen. Jede Zeile hat `zeit` (ISO)."""
+        je_monat = {}
+        for zeile in zeilen:
+            je_monat.setdefault(zeile["zeit"][:7], []).append(json.dumps(zeile, ensure_ascii=False) + "\n")
+        with self._nutzung_sperre:
+            ordner = self._ordner("nutzung")
+            for monat, texte in je_monat.items():
+                pfad = ordner / f"{monat}.jsonl"
+                neu = not pfad.exists()
+                fd = os.open(pfad, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o600)
+                try:
+                    os.write(fd, "".join(texte).encode())
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+                if neu:
+                    self._fest(ordner)
 
 
 def melde(fehler):

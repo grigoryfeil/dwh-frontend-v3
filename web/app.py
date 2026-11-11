@@ -12,9 +12,12 @@ leer. SQL geht nie an die Seite (Entscheidung Grigory, 08.11.2026), `abfragen` b
 Schalter `verifizieren` prüft ein zweites Gespräch die Antwort (harness/pruefung.py), das Ergebnis steht in `pruefung`. Dateien, die die Antwort im eigenen Gesprächsverzeichnis nennt (etwa
 Diagramme und Dashboards), übersetzt web/dateien.py in `dateien` und liefert nur diese aus. Mit eingeschalteter
 Beta-Ablage (web/ablage.py) wird jedes Gespräch vollständig abgelegt, die Seite zeigt das an und bietet Feedback.
+Dazu führt die Ablage ein Nutzerlog (Anmeldung, Sitzungsdauer, Runden), aber nur für Sitzungen, in denen ein Gespräch
+mit eingeschaltetem Speichern lief: Bis dahin warten die Ereignisse im Arbeitsspeicher und verfallen mit der Sitzung.
 """
 
 import asyncio
+import contextlib
 import datetime
 import hashlib
 import hmac
@@ -131,6 +134,9 @@ class Session:
     begonnen: float
     zuletzt: float
     ref: str = field(default_factory=lambda: secrets.token_hex(8))
+    beginn: str = field(default_factory=jetzt_iso)
+    erfasst: bool = False  # Nutzerlog: erst ab einem Gespräch mit Speichern, vorher warten die Ereignisse hier
+    wartend: list = field(default_factory=list)
 
 
 class Eintrag:
@@ -142,6 +148,8 @@ class Eintrag:
         self.speichern = False  # Beta-Ablage: Runden, die bei eingeschaltetem Speichern enden, werden abgelegt
         self.archiv = {}  # Nummer -> vollständige Runde für die Ablage, auch für ein späteres Einschalten
         self.gespeichert = set()
+        self.abgelegt = []  # Nummern der Runden, die in gespraech.json der Ablage stehen
+        self.nachsichern = None  # Nummer der laufenden Runde, die ein Feedback mit Gespräch nach ihrem Ende ablegt
         self.ablage_sperre = threading.Lock()
         self.gespraech = None  # wird im Hintergrund gestartet, das dauert einige Sekunden
         self.pruefer = None  # Prüfgespräch der laufenden Runde, nur während der Prüfrunde
@@ -215,6 +223,45 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
     sperre = threading.Lock()
     geheim = secrets.token_bytes(32)
     protokoll_sperre = threading.Lock()
+    nutzung_sperre = threading.Lock()
+
+    def schreibe_nutzung(zeilen):
+        try:
+            ablage.nutzung(zeilen)
+        except OSError as fehl:
+            ablage_modul.melde(fehl)
+
+    def nutze(s, ereignis, **felder):
+        """Ereignis einer Sitzung für das Nutzerlog. Geschrieben wird erst, wenn die Sitzung erfasst ist (erfasse)."""
+        if not ablage:
+            return
+        zeile = {"zeit": jetzt_iso(), "ereignis": ereignis, "sitzung": s.ref, "benutzer": s.email, **felder}
+        with nutzung_sperre:
+            if s.erfasst:
+                schreibe_nutzung([zeile])
+            elif len(s.wartend) < 200:
+                s.wartend.append(zeile)
+
+    def erfasse(s):
+        """In der Sitzung läuft ein Gespräch mit Speichern: Ab jetzt steht sie im Nutzerlog, samt dem Bisherigen."""
+        with nutzung_sperre:
+            if not s.erfasst:
+                s.erfasst = True
+                zeilen, s.wartend = s.wartend, []
+                schreibe_nutzung(zeilen)
+
+    def setze_speichern(s, eintrag, an):
+        """Unter der Sperre: Schalter des Gesprächs. Nur ein Wechsel wird vermerkt."""
+        if an == eintrag.speichern:
+            return
+        eintrag.speichern = an
+        if an:
+            erfasse(s)
+        nutze(s, "speichern", gespraech=eintrag.kennung, an=an, begonnen=eintrag.begonnen,
+              ablage=f"{eintrag.begonnen[:10]}/{eintrag.kennung}")
+
+    if ablage:
+        schreibe_nutzung([{"zeit": jetzt_iso(), "ereignis": "dienststart", "version": version()}])
 
     def schluessel(token):
         return hmac.new(geheim, token.encode(), hashlib.sha256).hexdigest()
@@ -236,14 +283,23 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
 
     # Sessions
 
-    def session_beenden(schl):
+    def session_beenden(schl, grund):
         s = sessions.pop(schl, None)
         if s is None:
             return
+        jetzt = time.monotonic()
+        if grund == "abmeldung":
+            s.zuletzt = jetzt
+        nutze(s, "ende", grund=grund, beginn=s.beginn, aktiv_s=round(s.zuletzt - s.begonnen),
+              dauer_s=round(jetzt - s.begonnen))
         eigene = [g for g in gespraeche.values() if g.besitzer == s.ref]
         for g in eigene:
             del gespraeche[g.kennung]
         return eigene
+
+    def abgelaufen(s, jetzt):
+        return "leerlauf" if jetzt - s.zuletzt > e.session_leerlauf \
+            else "hoechstdauer" if jetzt - s.begonnen > e.session_absolut else None
 
     def hole_session(request):
         token = request.cookies.get(COOKIE)
@@ -254,9 +310,9 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             s = sessions.get(schluessel(token))
             if s is None:
                 return None
-            if jetzt - s.zuletzt > e.session_leerlauf or jetzt - s.begonnen > e.session_absolut \
-                    or not kontendatei.aktiv(s.email):
-                eigene = session_beenden(schluessel(token)) or []
+            grund = abgelaufen(s, jetzt) or (None if kontendatei.aktiv(s.email) else "konto gesperrt")
+            if grund:
+                eigene = session_beenden(schluessel(token), grund) or []
             else:
                 s.zuletzt = jetzt
                 return s
@@ -272,8 +328,9 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             zu = []
             with sperre:
                 for schl, s in list(sessions.items()):
-                    if jetzt - s.zuletzt > e.session_leerlauf or jetzt - s.begonnen > e.session_absolut:
-                        zu += session_beenden(schl) or []
+                    grund = abgelaufen(s, jetzt)
+                    if grund:
+                        zu += session_beenden(schl, grund) or []
                 ruhend = []
                 for g in list(gespraeche.values()):
                     if not g.laeuft and jetzt - g.zuletzt > e.session_absolut:
@@ -320,14 +377,18 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
     # Runde im Hintergrund
 
     def sichern(eintrag):
-        """Legt alle festgehaltenen, noch nicht abgelegten Runden samt Dateien ab und schreibt das Gespräch neu."""
+        """Legt alle festgehaltenen, noch nicht abgelegten Runden samt Dateien ab und schreibt das Gespräch neu.
+        Liefert, ob das Gespräch jetzt vollständig in der Ablage steht. Scheitert es, holt der nächste Aufruf nach."""
         datum = eintrag.begonnen[:10]
         try:
             with eintrag.ablage_sperre:
+                if not eintrag.archiv:  # noch keine beendete Runde: kein leeres Gespräch in der Ablage
+                    return False
                 for n in sorted(set(eintrag.archiv) - eintrag.gespeichert):
                     runde = eintrag.archiv[n]
-                    runde["abgelegte_dateien"] = ablage.dateien(datum, eintrag.kennung, n, runde.pop("neue_dateien", []),
+                    runde["abgelegte_dateien"] = ablage.dateien(datum, eintrag.kennung, n, runde.get("neue_dateien", []),
                                                                 lambda name: dateien.oeffne(eintrag.cwd, name))
+                    runde.pop("neue_dateien", None)
                     eintrag.gespeichert.add(n)
                 schema = None
                 try:
@@ -335,14 +396,18 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 except (KeyError, ValueError, OSError):
                     pass
                 ablage.gespraech(datum, eintrag.kennung, {
-                    "gespraech": eintrag.kennung, "benutzer": eintrag.benutzer, "begonnen": eintrag.begonnen,
+                    "gespraech": eintrag.kennung, "benutzer": eintrag.benutzer, "sitzung": eintrag.besitzer,
+                    "begonnen": eintrag.begonnen,
                     "version": version(), "datenstand": stand_iso, "schema": schema,
                     "codex": getattr(eintrag.gespraech, "codex_version", None),
                     "modell": getattr(eintrag.gespraech, "modell", None),
                     "aufwand": getattr(eintrag.gespraech, "aufwand", None), "anweisung": pruefsumme,
                     "runden": [eintrag.archiv[n] for n in sorted(eintrag.gespeichert)]})
-        except OSError as fehl:
+                eintrag.abgelegt = sorted(eintrag.gespeichert)
+            return True
+        except Exception as fehl:  # noqa: BLE001, die Ablage stört das Gespräch nie
             ablage_modul.melde(fehl)
+            return False
 
     def archiviere(eintrag, nummer, runde, status, items, vorher, ergebnis=None):
         """Hält die beendete Runde vollständig fest und legt sie ab, wenn Speichern an ist. Vor dem Schließen des
@@ -366,8 +431,16 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         except Exception as fehl:  # noqa: BLE001, die Ablage stört das Gespräch nie
             ablage_modul.melde(fehl)
             return
-        if eintrag.speichern:
-            sichern(eintrag)
+        if eintrag.speichern or eintrag.nachsichern == nummer:
+            gesichert = sichern(eintrag)
+            if eintrag.speichern:  # Runden stehen nur im Nutzerlog, solange der Schalter des Gesprächs an ist
+                schreibe_nutzung([{
+                    "zeit": jetzt_iso(), "ereignis": "runde", "sitzung": eintrag.besitzer,
+                    "benutzer": eintrag.benutzer, "gespraech": eintrag.kennung, "runde": nummer, "status": status,
+                    "sekunden": round(ergebnis.sekunden, 1) if ergebnis else None,
+                    "verifizieren": bool(runde.get("verifizieren")),
+                    "pruefung": (runde.get("pruefung") or {}).get("status"),
+                    "dateien": len(runde.get("dateien") or []), "gesichert": gesichert}])
 
     def pruefe(eintrag, runde, text, beobachter):
         """Prüfrunde in einem eigenen Gespräch im Unterverzeichnis `pruefung`. Liefert (endgültige Antwort, Ergebnis
@@ -517,12 +590,15 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             with sperre:
                 offen = eintrag.laeuft and eintrag.runden[-1] is runde  # sonst war die Runde schon freigegeben
                 if offen:
+                    nummer = len(eintrag.runden)
                     runde["fehler"] = "interner Fehler"
                     prozess = loese_prozess(eintrag)
                     eintrag.laeuft, eintrag.fortschritt = False, None
                     eintrag.zuletzt = time.monotonic()
             if offen:
                 beende_prozess(prozess)
+                if ablage and nummer not in eintrag.archiv:  # ohne neue Dateien: Ihr Stand ist nach dem Fehler unklar
+                    archiviere(eintrag, nummer, runde, "fehler", [], ablage_modul.dateistand(eintrag.cwd))
         finally:
             if eintrag.beendet:
                 with sperre:
@@ -568,8 +644,9 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         jetzt = time.monotonic()
         alt = request.cookies.get(COOKIE)
         with sperre:
-            zu = session_beenden(schluessel(alt)) if alt else None
-            sessions[schluessel(token)] = Session(email, jetzt, jetzt)
+            zu = session_beenden(schluessel(alt), "neue anmeldung") if alt else None
+            s = sessions[schluessel(token)] = Session(email, jetzt, jetzt)
+            nutze(s, "anmeldung")
         for g in zu or []:
             g.schliessen()
         antwort = JSONResponse({"email": email})
@@ -580,7 +657,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
     def abmelden(request):
         token = request.cookies.get(COOKIE)
         with sperre:
-            zu = session_beenden(schluessel(token)) if token else None
+            zu = session_beenden(schluessel(token), "abmeldung") if token else None
         for g in zu or []:
             g.schliessen()
         antwort = Response(status_code=204)
@@ -638,7 +715,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
                 if frei is False:
                     return fehler(503, "Alle Plätze belegt, bitte später erneut versuchen")
             eintrag.runden.append(runde)
-            eintrag.speichern = bool(daten.get("speichern")) and ablage is not None
+            setze_speichern(s, eintrag, bool(daten.get("speichern")) and ablage is not None)
             eintrag.laeuft = True
             eintrag.abbruch = None
             eintrag.zuletzt = time.monotonic()
@@ -775,7 +852,7 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
             eintrag = eigenes(request, s)
             if eintrag is None:
                 return fehler(404, "Gespräch unbekannt")
-            eintrag.speichern = bool(daten.get("an"))
+            setze_speichern(s, eintrag, bool(daten.get("an")))
         if eintrag.speichern:
             await asyncio.to_thread(sichern, eintrag)
         return JSONResponse({"speichern": eintrag.speichern})
@@ -792,19 +869,36 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         kennung = (daten or {}).get("gespraech")
         if not text or len(text) > 4000 or not (kennung is None or isinstance(kennung, str)):
             return fehler(422, "Ungültiges Feedback")
-        eintrag = None
-        if kennung and daten.get("mitsenden", True):
-            with sperre:
-                eintrag = gespraeche.get(kennung)
-                if eintrag is None or eintrag.besitzer != s.ref:
-                    return fehler(404, "Gespräch unbekannt")
+        mitsenden = bool(kennung) and daten.get("mitsenden", True)
+        with sperre:
+            eintrag = gespraeche.get(kennung) if kennung and KENNUNG.fullmatch(kennung) else None
+            if eintrag is not None and eintrag.besitzer != s.ref:
+                eintrag = None
+            if mitsenden and eintrag is None:
+                return fehler(404, "Gespräch unbekannt")
+            offen = len(eintrag.runden) if eintrag else 0
+        abgelegt, laeuft = [], None
+        if mitsenden:
+            # Eine Runde, die noch läuft oder gerade endet, legt sich nach ihrem Ende selbst ab (archiviere)
+            with eintrag.ablage_sperre:
+                if offen and offen not in eintrag.archiv:
+                    eintrag.nachsichern = laeuft = offen
             await asyncio.to_thread(sichern, eintrag)
+        if eintrag is not None:
+            with eintrag.ablage_sperre:
+                abgelegt = list(eintrag.abgelegt)
+        # `mitsenden` ist der Wunsch des Testers. `ablage` und `runden` nennen, was wirklich in der Ablage steht:
+        # auch ohne Mitsenden, wenn der Schalter des Gesprächs an war, und weniger, wenn das Sichern scheiterte.
+        zeile = {"zeit": jetzt_iso(), "benutzer": s.email, "sitzung": s.ref, "text": text,
+                 "gespraech": eintrag.kennung if eintrag else None, "mitsenden": mitsenden,
+                 "ablage": f"{eintrag.begonnen[:10]}/{eintrag.kennung}" if abgelegt else None,
+                 "runden": abgelegt, "runde_laeuft": laeuft, "version": version(), "datenstand": stand_iso}
         try:
-            name = ablage.feedback({"zeit": jetzt_iso(), "benutzer": s.email, "text": text, "gespraech": kennung,
-                                    "ablage": f"{eintrag.begonnen[:10]}/{kennung}" if eintrag else None,
-                                    "version": version()})
-        except OSError:
+            name = await asyncio.to_thread(ablage.feedback, zeile)
+        except OSError as fehl:
+            ablage_modul.melde(fehl)
             return fehler(503, "Feedback konnte nicht abgelegt werden")
+        nutze(s, "feedback", feedback=name, gespraech=zeile["gespraech"], mitsenden=mitsenden)
         return JSONResponse({"feedback": name}, status_code=201)
 
     def abbrechen(request):
@@ -894,8 +988,16 @@ def erzeuge(e: Einstellungen, gespraech_fabrik=None, pruefer_fabrik=None):
         Route("/api/export.pdf", export_pdf),
         Route("/api/export.xlsx", export_excel),
     ]
-    return Starlette(routes=routen, middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=e.hosts),
-                                                Middleware(Schutz)])
+
+    @contextlib.asynccontextmanager
+    async def lebenszeit(_app):
+        yield
+        with sperre:
+            for schl in list(sessions):  # Neustart beim Einspielen: Sitzungen enden, das Nutzerlog hält es fest
+                session_beenden(schl, "dienstende")
+
+    return Starlette(routes=routen, lifespan=lebenszeit,
+                     middleware=[Middleware(TrustedHostMiddleware, allowed_hosts=e.hosts), Middleware(Schutz)])
 
 
 def aus_umgebung():

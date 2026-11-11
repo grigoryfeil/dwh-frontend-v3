@@ -79,7 +79,7 @@ class Grundlage(unittest.TestCase):
         self.pruefer = {"gestartet": 0, "eingaben": []}
         e = web_app.Einstellungen(konten=basis / "konten.json", gespraeche=basis / "gespraeche", hosts=["testserver"],
                                   sicher=False, max_gespraeche=self.max_gespraeche, max_behalten=self.max_behalten,
-                                  abbruch_frist=self.abbruch_frist)
+                                  abbruch_frist=self.abbruch_frist, **self.einstellungen(basis))
         app = web_app.erzeuge(e, gespraech_fabrik=lambda cwd: Ersatzmodell(cwd, self.antwort, self.haupt),
                               pruefer_fabrik=lambda cwd: Ersatzmodell(cwd, self.pruefung, self.pruefer))
         self.c = TestClient(app)
@@ -88,15 +88,19 @@ class Grundlage(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
+    def einstellungen(self, basis):
+        """Weitere Einstellungen einer Testklasse, etwa die Beta-Ablage (tests/test_web_ablage.py)."""
+        return {}
+
     def antwort(self, cwd, text, n):
         return f"Antwort {n}"
 
     def pruefung(self, cwd, text, n):
         return "[Prüfung: bestätigt] nachgerechnet"
 
-    def frage(self, text, kennung=None, verifizieren=False):
+    def frage(self, text, kennung=None, verifizieren=False, speichern=False):
         r = self.c.post("/api/fragen", json={"text": text, "gespraech": kennung, "verifizieren": verifizieren,
-                                             "speichern": False})
+                                             "speichern": speichern})
         self.assertEqual(r.status_code, 202, r.text)
         kennung = r.json()["gespraech"]
         for _ in range(200):

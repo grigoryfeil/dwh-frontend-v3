@@ -80,7 +80,7 @@ Diese Annahmen gelten, bis eine echte Ausgabe ihnen widerspricht.
 - **Steuerung:** Eine zentrale Steuersession steuert, versioniert und führt zusammen.
 - **Parallelität:** Unabhängige Arbeitspakete laufen parallel in eigenen Sessions, jede in einem eigenen Worktree und auf einem eigenen Zweig.
 - **Grigory wird eingebunden**, wenn echte Ausgaben vorliegen oder wenn ein Fix nicht trägt. Dann kommt eine Diagnose statt der nächsten Reparaturrunde.
-- **Betrieb:** Beta mit einem geteilten Konto `tester` für zwei bis drei Tester und Beta-Ablage aller Gespräche (`betrieb/ablage-auswertung.py` schlägt daraus Referenzfälle vor). Ein täglicher Selbsttest prüft die ganze Kette. Eingespielt wird nur, wenn kein Gespräch läuft (`betrieb/einrichtung.sh` bricht sonst ab).
+- **Betrieb:** Beta mit einem geteilten Konto `tester` für zwei bis drei Tester und Beta-Ablage aller Gespräche samt Feedback und Nutzerlog für Sitzungen mit eingeschaltetem Speichern (`betrieb/ablage-auswertung.py` wertet die Nutzung aus und schlägt Referenzfälle vor). Ein täglicher Selbsttest prüft die ganze Kette. Eingespielt wird nur, wenn kein Gespräch läuft (`betrieb/einrichtung.sh` bricht sonst ab).
 - **Sandbox der Modell-Shell:** kein Netz, kein Zugriff auf andere Gespräche, Zugangsdaten und `/tmp`, temporäre Dateien je Gespräch.
 
 ## Versionierung

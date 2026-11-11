@@ -1,7 +1,7 @@
 #!/bin/bash
 # Weboberfläche von DWH Frontend V3 auf dem VPS, als root, wiederholbar. Läuft am Ende von einrichtung.sh, die
 # Anwendung samt web/ liegt dann unter /opt/dwh-frontend-v3/app. Berührt nur Eigenes: Unit dwh-frontend-v3-web,
-# vHost dwhv3, Zertifikat der Subdomain, Kontendatei, Zugangsdatei des Testkontos.
+# vHost dwhv3, Zertifikat der Subdomain, Kontendatei, Zugangsdatei des Testkontos, Sicherung der Beta-Ablage.
 # Aufruf: betrieb/web-einrichtung.sh <Pfad zum entpackten Repo-Stand auf dem VPS>
 set -euo pipefail
 quelle="${1:?Repo-Stand fehlt}"
@@ -50,11 +50,16 @@ install -D -m 0644 -o root -g root "$quelle/betrieb/selbsttest.py" "$APP/betrieb
 install -m 0644 -o root -g root "$quelle/betrieb/dwh-frontend-v3-selbsttest.service" \
   "$quelle/betrieb/dwh-frontend-v3-selbsttest.timer" /etc/systemd/system/
 
+# Nächtliche Kopie der Beta-Ablage (03:30) nach /var/backups/dwh-frontend-v3, 14 Tage
+install -D -m 0755 -o root -g root "$quelle/betrieb/ablage-sicherung.sh" "$APP/betrieb/ablage-sicherung.sh"
+install -m 0644 -o root -g root "$quelle/betrieb/dwh-frontend-v3-ablage-sicherung.service" \
+  "$quelle/betrieb/dwh-frontend-v3-ablage-sicherung.timer" /etc/systemd/system/
+
 install -m 0644 -o root -g root "$quelle/betrieb/dwh-frontend-v3-web.service" /etc/systemd/system/
 systemd-analyze verify /etc/systemd/system/dwh-frontend-v3-web.service
 systemctl daemon-reload
 systemctl enable dwh-frontend-v3-web.service >/dev/null
-systemctl enable --now dwh-frontend-v3-selbsttest.timer >/dev/null
+systemctl enable --now dwh-frontend-v3-selbsttest.timer dwh-frontend-v3-ablage-sicherung.timer >/dev/null
 systemctl restart dwh-frontend-v3-web.service
 
 # Zertifikat im webroot-Verfahren über den bestehenden Port-80-Server (acme-only), dann der vHost

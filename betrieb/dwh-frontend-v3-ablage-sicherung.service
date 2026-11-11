@@ -1,0 +1,7 @@
+# Nächtliche Kopie der Beta-Ablage (betrieb/ablage-sicherung.sh), ausgelöst vom gleichnamigen Timer.
+[Unit]
+Description=DWH Frontend V3: nächtliche Sicherung der Beta-Ablage
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /opt/dwh-frontend-v3/app/betrieb/ablage-sicherung.sh

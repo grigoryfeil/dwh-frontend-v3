@@ -1,7 +1,8 @@
 """Auswertung der Beta-Ablage, als root auf dem VPS.
 
 Liest die Gespräche und Rückmeldungen eines Zeitraums aus der Ablage (web/ablage.py) und schreibt:
-- einen Bericht (Markdown) mit Kennzahlen und je Runde Frage, Ergebnis, Dauer, Auffälligkeiten,
+- einen Bericht (Markdown) mit Kennzahlen, der Nutzung je Nutzer und Sitzung (Nutzerlog, nur Sitzungen mit
+  eingeschaltetem Speichern) und je Runde Frage, Ergebnis, Dauer, Auffälligkeiten,
 - eine Fragendatei für harness/lauf.py mit den auffälligen Gesprächen (Rückmeldung, Fehler, Abbruch, sehr lang).
   Aus ihnen werden neue Referenzfälle, nachdem ein Mensch die richtige Antwort belegt hat.
 Beides landet unter /var/lib/dwh-frontend-v3/laeufe/ (root, nicht im Bereich der Modell-Shell, nicht in git).
@@ -18,6 +19,65 @@ LANG_S = 600
 
 def im_zeitraum(tag, von, bis):
     return (not von or tag >= von) and (not bis or tag <= bis)
+
+
+def lies_nutzung(von, bis):
+    zeilen = []
+    for datei in sorted((ABLAGE / "nutzung").glob("20??-??.jsonl")):
+        try:
+            text = datei.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        for zeile in text.splitlines():
+            try:
+                zeilen.append(json.loads(zeile))
+            except ValueError:  # eine beim Absturz halb geschriebene Zeile
+                pass
+    return [z for z in zeilen if im_zeitraum((z.get("zeit") or "")[:10], von, bis)]
+
+
+def minuten(sekunden):
+    return f"{sekunden / 60:.0f} min"
+
+
+def nutzung(zeilen):
+    """Abschnitt Nutzung aus den Zeilen des Nutzerlogs: je Nutzer eine Summe, je Sitzung eine Zeile."""
+    zeilen = sorted(zeilen, key=lambda z: z.get("zeit") or "")
+    starts = [z["zeit"] for z in zeilen if z.get("ereignis") == "dienststart"]
+    sitzungen = collections.defaultdict(list)
+    for z in zeilen:
+        if z.get("sitzung"):
+            sitzungen[z["sitzung"]].append(z)
+    tabelle, je_nutzer = [], collections.defaultdict(collections.Counter)
+    for ereignisse in sitzungen.values():
+        nutzer = ereignisse[0].get("benutzer", "?")
+        ende = next((z for z in ereignisse if z["ereignis"] == "ende"), None)
+        beginn = ende["beginn"] if ende else ereignisse[0]["zeit"]
+        letzte = ereignisse[-1]["zeit"]
+        if ende:
+            aktiv, grund = ende.get("aktiv_s") or 0, ende.get("grund", "?")
+        else:  # ohne Ende im Log: noch offen, oder der Dienst endete hart, dann zählt das letzte Ereignis
+            aktiv = (datetime.datetime.fromisoformat(letzte) - datetime.datetime.fromisoformat(beginn)).total_seconds()
+            grund = "dienst neu gestartet" if any(s > letzte for s in starts) else "offen"
+        runden = [z for z in ereignisse if z["ereignis"] == "runde"]
+        gespraeche = {z["gespraech"] for z in ereignisse if z["ereignis"] in ("speichern", "runde")}
+        rueck = sum(z["ereignis"] == "feedback" for z in ereignisse)
+        je_nutzer[nutzer].update(sitzungen=1, aktiv=aktiv, gespraeche=len(gespraeche), runden=len(runden),
+                                 rueckmeldungen=rueck, rechenzeit=sum(z.get("sekunden") or 0 for z in runden))
+        tabelle.append(f"| {beginn[:16].replace('T', ' ')} | {nutzer} | {minuten(aktiv)} | {grund} | "
+                       f"{len(gespraeche)} | {len(runden)} | {rueck} |")
+    if not tabelle:
+        return ["\n## Nutzung\n", "Keine Sitzung mit eingeschaltetem Speichern im Zeitraum.\n"]
+    aus = ["\n## Nutzung\n",
+           "Nur Sitzungen, in denen ein Gespräch mit eingeschaltetem Speichern lief. Aktive Zeit: Anmeldung bis letzte "
+           "Anfrage. Runden: nur aus Gesprächen mit eingeschaltetem Schalter.\n",
+           "| Nutzer | Sitzungen | aktive Zeit | Gespräche | Runden | Wartezeit auf Antworten | Rückmeldungen |",
+           "|---|---:|---:|---:|---:|---:|---:|"]
+    aus += [f"| {n} | {c['sitzungen']} | {minuten(c['aktiv'])} | {c['gespraeche']} | {c['runden']} | "
+            f"{minuten(c['rechenzeit'])} | {c['rueckmeldungen']} |" for n, c in sorted(je_nutzer.items())]
+    aus += ["\n### Sitzungen\n", "| Beginn | Nutzer | aktiv | Ende | Gespräche | Runden | Rückmeldungen |",
+            "|---|---|---:|---|---:|---:|---:|"] + sorted(tabelle)
+    return aus + [""]
 
 
 def main():
@@ -76,7 +136,7 @@ def main():
                           + (f", {', '.join(merk)}" if merk else "")
                           + f"  \n  {antwort.strip()[:400].replace(chr(10), ' ')}\n")
         for f in zu_gespraech.get(kennung, []):
-            zeilen.append(f"> Rückmeldung ({f.get('zeit', '')[:16]}): {f.get('text', '')}\n")
+            zeilen.append(f"> Rückmeldung ({f.get('zeit', '')[:16]}, {f.get('benutzer', '?')}): {f.get('text', '')}\n")
             gruende_gespraech.append("Rückmeldung")
         if gruende_gespraech:
             fragen = [r.get("frage", "") for r in g.get("runden", []) if r.get("frage")]
@@ -91,9 +151,10 @@ def main():
             "| Merkmal | Anzahl |\n|---|---:|"]
     kopf += [f"| {k} | {v} |" for k, v in sorted(zaehler.items())]
     kopf.append(f"\n{len(auffaellig)} auffällige Gespräche stehen in der Fragendatei.\n")
+    kopf += nutzung(lies_nutzung(von, bis))
     if ohne:
         kopf.append("\n## Rückmeldungen ohne Gespräch\n")
-        kopf += [f"- {f.get('zeit', '')[:16]}: {f.get('text', '')}" for f in ohne]
+        kopf += [f"- {f.get('zeit', '')[:16]}, {f.get('benutzer', '?')}: {f.get('text', '')}" for f in ohne]
 
     stempel = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     bericht = ZIEL / f"ablage-{stempel}.md"
